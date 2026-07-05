@@ -475,7 +475,7 @@ async function run() {
   svg += '<text x="122" y="' + y(-9) + '" font-size="12" font-weight="bold" fill="#1FE38F">green</text>';
   const cv = comp[last];
   if (isFinite(cv)) {
-    const col = cv <= GATE_THR ? "#1FE38F" : cv <= -4 ? "#FFB020" : cv >= 8 ? "#FF5A4D" : "#EAF2FB";
+    const col = cv <= CFG.GATE_THR ? "#1FE38F" : cv <= -4 ? "#FFB020" : cv >= 8 ? "#FF5A4D" : "#EAF2FB";
     svg += '<polygon points="110,' + y(cv) + ' 128,' + (y(cv)-9) + ' 128,' + (y(cv)+9) +
            '" fill="' + col + '"/><text x="136" y="' + (y(cv)+6) +
            '" font-size="22" font-weight="bold" font-family="PT Mono" fill="' + col + '">' +

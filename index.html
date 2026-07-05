@@ -64,7 +64,7 @@ button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 </head>
 <body>
 <header>
-  <h1>Индикатор капитуляции<span class="sub">спецификация v6 · сборка <b>web-8</b> · equal ≤ −8 | OR ≤ −9 | защёлка 63 дн</span></h1>
+  <h1>Индикатор капитуляции<span class="sub">спецификация v6 · сборка <b>web-9</b> · equal ≤ −8 | OR ≤ −9 | защёлка 63 дн</span></h1>
   <div><span id="asof" class="mono">данные загружаются…</span>
   <button id="refresh" style="margin-left:12px">Обновить</button></div>
 </header>
@@ -298,19 +298,25 @@ function parseCboe(text) {
   return {t, v};
 }
 function parseYahoo(text) {   // v8 chart JSON -> {t, v} по adjclose (сплиты!)
-  try {
-    const r = JSON.parse(text).chart.result[0];
-    const ts = r.timestamp || [];
-    const adj = r.indicators.adjclose && r.indicators.adjclose[0].adjclose;
-    const cls = r.indicators.quote[0].close;
-    const src = adj && adj.some(x => x != null) ? adj : cls;
-    const t = [], v = [];
-    for (let i = 0; i < ts.length; i++) {
-      const c = src[i];
-      if (c != null && isFinite(c)) { t.push(new Date(ts[i] * 1000)); v.push(c); }
-    }
-    return {t, v};
-  } catch (e) { return {t: [], v: []}; }
+  let obj;
+  try { obj = JSON.parse(text); }
+  catch (e) { return {t: [], v: [], err: "не JSON: " + text.slice(0, 120)}; }
+  const chart = obj && obj.chart;
+  if (chart && chart.error) return {t: [], v: [], err: "Yahoo error: " + JSON.stringify(chart.error).slice(0, 120)};
+  const r = chart && chart.result && chart.result[0];
+  if (!r || !r.timestamp) return {t: [], v: [], err: "нет result/timestamp: " + text.slice(0, 120)};
+  const ts = r.timestamp;
+  const ind = r.indicators || {};
+  const adj = ind.adjclose && ind.adjclose[0] && ind.adjclose[0].adjclose;
+  const cls = ind.quote && ind.quote[0] && ind.quote[0].close;
+  const srcArr = (adj && adj.some(x => x != null)) ? adj : cls;
+  if (!srcArr) return {t: [], v: [], err: "нет close-массива"};
+  const t = [], v = [];
+  for (let i = 0; i < ts.length; i++) {
+    const c = srcArr[i];
+    if (c != null && isFinite(c)) { t.push(new Date(ts[i] * 1000)); v.push(c); }
+  }
+  return {t, v};
 }
 async function loadNaaimInner(log) {
   srcStatus("naaim", "loading", "поиск xlsx…");
@@ -389,8 +395,10 @@ async function run() {
       const t = await fetchText(
         "https://" + host + ".finance.yahoo.com/v8/finance/chart/TQQQ?range=max&interval=1d",
         log, "TQQQ (Yahoo " + host + ")", "tqqq");
-      const p = t ? parseYahoo(t) : null;
-      if (p && p.t.length > 200) return p;
+      if (!t) continue;
+      const p = parseYahoo(t);
+      if (p.t.length > 200) return p;
+      if (p.err) log("· TQQQ разбор пуст (" + host + "): " + p.err);
     }
     return null;
   }

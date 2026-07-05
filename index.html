@@ -64,7 +64,7 @@ button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 </head>
 <body>
 <header>
-  <h1>Индикатор капитуляции<span class="sub">спецификация v6 · сборка <b>web-9</b> · equal ≤ −8 | OR ≤ −9 | защёлка 63 дн</span></h1>
+  <h1>Индикатор капитуляции<span class="sub">спецификация v6 · сборка <b>web-10</b> · equal ≤ −8 | OR ≤ −9 | защёлка 63 дн</span></h1>
   <div><span id="asof" class="mono">данные загружаются…</span>
   <button id="refresh" style="margin-left:12px">Обновить</button></div>
 </header>
@@ -391,14 +391,24 @@ async function run() {
     return t ? parseYahoo(t) : s;
   }
   async function loadTqqq() {
+    const p1 = Math.floor(Date.parse("2011-01-01") / 1000);   // TQQQ существует с 2010
+    const p2 = Math.floor(Date.now() / 1000);
+    const urls = [
+      "?period1=" + p1 + "&period2=" + p2 + "&interval=1d",
+      "?range=10y&interval=1d",
+      "?range=max&interval=1d",
+    ];
     for (const host of ["query1", "query2"]) {
-      const t = await fetchText(
-        "https://" + host + ".finance.yahoo.com/v8/finance/chart/TQQQ?range=max&interval=1d",
-        log, "TQQQ (Yahoo " + host + ")", "tqqq");
-      if (!t) continue;
-      const p = parseYahoo(t);
-      if (p.t.length > 200) return p;
-      if (p.err) log("· TQQQ разбор пуст (" + host + "): " + p.err);
+      for (const qs of urls) {
+        const t = await fetchText(
+          "https://" + host + ".finance.yahoo.com/v8/finance/chart/TQQQ" + qs,
+          log, "TQQQ (Yahoo " + host + ")", "tqqq");
+        if (!t) continue;
+        const p = parseYahoo(t);
+        if (p.t.length >= 60) { log("· TQQQ: получено " + p.t.length + " точек"); return p; }
+        if (p.err) log("· TQQQ разбор пуст: " + p.err);
+        else log("· TQQQ: пришло всего " + p.t.length + " точек (мало), пробую иначе");
+      }
     }
     return null;
   }
@@ -407,20 +417,20 @@ async function run() {
   let tqqq  = await safe(loadTqqq());
   let naaim = await safe(loadNaaim(log));
   // второй круг
-  if (!fresh(vix) || !fresh(v3m) || !(tqqq && tqqq.t.length > 200)) {
+  if (!fresh(vix) || !fresh(v3m) || !(tqqq && tqqq.t.length >= 60)) {
     log("→ второй круг для незагруженного (пауза 3 с)…");
     await sleep(3000);
     if (!fresh(vix))  vix  = await safe(loadIdx("VIX", "%5EVIX", "vix"));
     if (!fresh(v3m))  v3m  = await safe(loadIdx("VIX3M", "%5EVIX3M", "vix3m"));
-    if (!(tqqq && tqqq.t.length > 200)) tqqq = await safe(loadTqqq());
+    if (!(tqqq && tqqq.t.length >= 60)) tqqq = await safe(loadTqqq());
   }
   // финализация чипов
   srcStatus("vix",   fresh(vix)  ? "ok" : "fail",
             fresh(vix)  ? "по " + vix.t[vix.t.length-1].toISOString().slice(0,10) : "не загрузился");
   srcStatus("vix3m", fresh(v3m)  ? "ok" : "fail",
             fresh(v3m)  ? "по " + v3m.t[v3m.t.length-1].toISOString().slice(0,10) : "flash-детектор неактивен");
-  srcStatus("tqqq",  (tqqq && tqqq.t.length > 200) ? "ok" : "fail",
-            (tqqq && tqqq.t.length > 200) ? "по " + tqqq.t[tqqq.t.length-1].toISOString().slice(0,10) : "лестница недоступна");
+  srcStatus("tqqq",  (tqqq && tqqq.t.length >= 60) ? "ok" : "fail",
+            (tqqq && tqqq.t.length >= 60) ? "по " + tqqq.t[tqqq.t.length-1].toISOString().slice(0,10) : "лестница недоступна");
   srcStatus("naaim", (naaim && fresh(naaim)) ? "ok" : "fail",
             (naaim && fresh(naaim)) ? naaim.t.length + " недель" : "измор-детектор неактивен");
 
@@ -516,7 +526,7 @@ async function run() {
 
   // лестница TQQQ
   const lad = document.getElementById("ladder");
-  if (tqqq && tqqq.t.length > 200) {
+  if (tqqq && tqqq.t.length >= 60) {
     const dd = drawdown(tqqq.v);
     const cur = dd[dd.length - 1];
     const px = d => (1 - Math.min(Math.max(-d, 0), 1)) * 100;

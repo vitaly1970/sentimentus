@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Советник · Barbell TQQQ + QDTE</title>
+<title>Main Strategy · Barbell TQQQ + QDTE</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
@@ -11,9 +11,6 @@
 .state-row{display:flex;justify-content:flex-end;align-items:center;gap:9px;margin-bottom:16px;flex-wrap:wrap}
 .state-row .lab{font-size:.85rem;color:var(--muted)}
 .state-row select{font-size:.85rem;font-family:var(--mono);padding:6px 10px;border:1px solid var(--rule2);border-radius:6px;background:#fff;color:var(--ink)}
-
-.run{width:100%;padding:15px;font-size:1.05rem;font-weight:600;font-family:var(--sans);background:var(--ink);color:#fff;border:none;border-radius:9px;cursor:pointer;margin-bottom:20px}
-.run:disabled{opacity:.55;cursor:wait}
 
 .warnbar{background:var(--red-bg);border:1px solid var(--red-dot);color:var(--red);border-radius:9px;padding:11px 15px;font-size:.9rem;margin-bottom:15px;display:none}
 
@@ -59,21 +56,13 @@
 .hc{background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:15px 10px;text-align:center}
 .hc .n{font-family:var(--mono);font-size:1.5rem;font-weight:600}
 .hc .c{font-size:.85rem;color:var(--sec);margin-top:5px}
-
-.journal{display:flex;justify-content:space-between;align-items:center;background:var(--surf);border:1px solid var(--rule);border-radius:13px;padding:13px 17px;gap:12px;flex-wrap:wrap}
-.journal .txt{font-family:var(--mono);font-size:.85rem;color:var(--sec)}
-.journal button{font-size:.85rem;padding:7px 15px;font-family:var(--mono);border:1px solid var(--rule2);background:#fff;border-radius:6px;cursor:pointer;color:var(--ink)}
-.journal button.copied{background:var(--ok-bg);border-color:var(--ok-dot);color:var(--ok)}
-
-#log{font-family:var(--mono);font-size:.8rem;color:var(--muted);white-space:pre-wrap;margin-top:14px}
-footer{margin-top:28px;border-top:1px solid var(--rule);padding-top:12px;font-size:.8rem;color:var(--muted);line-height:1.6}
 </style>
 </head>
 <body>
 <div class="wrap">
   <a class="back" href="index.html">← все инструменты</a>
   <div class="topbar">
-    <a class="home" href="index.html">Советник</a>
+    <a class="home" href="index.html">Main Strategy</a>
     <span class="meta" id="meta">данные не загружены</span>
   </div>
 
@@ -96,7 +85,6 @@ footer{margin-top:28px;border-top:1px solid var(--rule);padding-top:12px;font-si
     </select>
   </div>
 
-  <button class="run" id="run">Проверить условия</button>
   <div class="warnbar" id="warnbar"></div>
 
   <div id="out" style="display:none">
@@ -109,15 +97,7 @@ footer{margin-top:28px;border-top:1px solid var(--rule);padding-top:12px;font-si
       <div class="wing-grid"><div class="therm" id="qd-therm"></div><div class="rows" id="qd-rows"></div></div>
       <div class="health" id="qd-health"></div>
     </div>
-    <div class="journal"><span class="txt" id="jrn"></span><button id="jrn-copy">копировать в журнал</button></div>
   </div>
-  <div id="log"></div>
-
-  <footer>
-    TQQQ: выход — пересечение −11,2% недельным закрытием (исполнение пн) · возврат остатка — закрытие выше последнего уровня-ордера + ADX&gt;25 + CHOP&lt;45 (исполнение пт) · транши −20,6/−29,5/−41,5 по касанию.
-    QDTE: статус от просадки QQQ · выход 50% на −11,2%, 100% на −20% · возврат по недельному закрытию + ADX/CHOP · выплаты реинвест выше −5,3%, иначе в SGOV · защитный актив SGOV · цена QDTE справочна.
-  </footer>
-</div>
 
 <script>
 'use strict';
@@ -132,10 +112,10 @@ const mem={},store={
   write(k,v){try{if(this.k){this.k.setItem(k,v);return}}catch(e){}mem[k]=v;}
 };
 ['state','lastlvl','qstate'].forEach(id=>{const s=store.read('adv_'+id);if(s!==null)$(id).value=s;
-  $(id).addEventListener('change',()=>{store.write('adv_'+id,$(id).value);sync();});});
+  $(id).addEventListener('change',()=>{store.write('adv_'+id,$(id).value);sync();if(window.__loaded)runAdvisor();});});
 function sync(){$('lastlvl').style.display=$('state').value==='CASH'?'':'none';}
 sync();
-function log(s){$('log').textContent+=s+'\n';}
+function log(s){ if(window.console) console.log(s); }
 
 /* ---- данные через бэкенд Tiingo (ключ на сервере) ---- */
 async function getData(sym,start){
@@ -229,9 +209,9 @@ function thermQDTE(ath,cur){
 }
 
 /* ---- прогон ---- */
-$('run').addEventListener('click',async()=>{
-  $('log').textContent='';$('warnbar').style.display='none';
-  $('run').disabled=true;$('run').textContent='Загружаю данные…';
+async function runAdvisor(){
+  $('warnbar').style.display='none';
+  $('meta').textContent='загрузка данных…';
   try{
     const q=await getData('QQQ','1999-01-01');
     let tqCur=null,tqAth=null;
@@ -278,15 +258,14 @@ $('run').addEventListener('click',async()=>{
       }else{
         sig=`В позиции 100%. <span class="soft">Действий нет</span>`;
         const te=tqAt('exit');
-        fore=te?`выход · продать TQQQ ниже <span class="price">${fmt(te)}</span> <span class="ref">(QQQ ${fmt(L.exit)})</span>`
+        fore=te?`выход · продать TQQQ ниже <span class="price">${fmt(te)}</span> <span class="ref">при QQQ — ${fmt(L.exit)}</span>`
                :`выход при закрытии недели ниже QQQ ${fmt(L.exit)}`;
-        foreSub=`до сигнала ${(100*(last.c/L.exit-1)).toFixed(1)}%`;
       }
     }else{
       const lv=$('lastlvl').value;
       const key={exit:'exit',t1:'t1',t2:'t2',t3:'t3'}[lv];
       const ref=L[key],tqRef=tqAt(key);
-      const refTxt=tqRef?`<span class="price">${fmt(tqRef)}</span> <span class="ref">(QQQ ${fmt(ref)})</span>`:`QQQ ${fmt(ref)}`;
+      const refTxt=tqRef?`<span class="price">${fmt(tqRef)}</span> <span class="ref">при QQQ — ${fmt(ref)}</span>`:`при QQQ — ${fmt(ref)}`;
       const okRe=curW>ref&&adx>25&&chop<45;
       const order=['exit','t1','t2','t3'],idx=order.indexOf(key),nxt=order[idx+1];
       const nxtName={t1:'транш 2',t2:'транш 3',t3:null}[key];
@@ -302,7 +281,7 @@ $('run').addEventListener('click',async()=>{
         sig=`${posTxt}. <span class="soft">Ждём ${waitT} или возврат остатка на уровне ${refTxt}</span>`;
       }
       if(nxt&&nxtName){const tn=tqAt(nxt);
-        fore=`${nxtName} · докупить TQQQ на уровне <span class="price">${tn?fmt(tn):''}</span> <span class="ref">(QQQ ${fmt(L[nxt])})</span>`;}
+        fore=`${nxtName} · докупить TQQQ на уровне <span class="price">${tn?fmt(tn):''}</span> <span class="ref">при QQQ — ${fmt(L[nxt])}</span>`;}
       else fore='лестница исчерпана — ждём возврата остатка';
       foreSub=`возврат при закрытии выше уровня-ордера + ADX&gt;25 + CHOP&lt;45 · сейчас ADX ${adx.toFixed(1)}, CHOP ${chop.toFixed(1)}`;
     }
@@ -323,24 +302,22 @@ $('run').addEventListener('click',async()=>{
     const qs=$('qstate').value;let qsig,qfore,qforeSub='';
     if(qs==='FULL'){
       if(dd>DD.yellow){qsig=`В QDTE 100%. <span class="soft">Выплаты реинвестируются</span>`;
-        qfore=`Выплаты в защитный актив <span class="ref">(QQQ ${fmt(L.yellow)})</span>`;qforeSub=`до жёлтого ${(100*(last.c/L.yellow-1)).toFixed(1)}%`;}
+        qfore=`Выплаты в защитный актив при QQQ — <span class="price">${fmt(L.yellow)}</span>`;}
       else if(dd>DD.exit){qsig=`В QDTE 100%. <span class="soft">Выплаты в защитный актив (SGOV)</span>`;
-        qfore=`Выход в защитный актив 50% <span class="ref">(QQQ ${fmt(L.exit)})</span>`;qforeSub=`до красного ${(100*(last.c/L.exit-1)).toFixed(1)}%`;}
+        qfore=`Выход в защитный актив 50% при QQQ — <span class="price">${fmt(L.exit)}</span>`;}
       else{qsig=`<span class="soft">Достигнут красный уровень.</span> Выход в защитный актив 50%`;
-        qfore=`Выход в защитный актив 100% <span class="ref">(QQQ ${fmt(L.bear)})</span>`;qforeSub=`до медвежьего ${(100*(last.c/L.bear-1)).toFixed(1)}%`;}
+        qfore=`Выход в защитный актив 100% при QQQ — <span class="price">${fmt(L.bear)}</span>`;}
     }else if(qs==='HALF'){
       const okBack=curW>L.exit&&adx>25&&chop<45;
       if(dd<=DD.bear){qsig=`<span class="soft">Достигнут медвежий уровень.</span> Выход в защитный актив 100%`;}
       else if(okBack){qsig=`Выход в защитный актив 50%. <span class="soft">Условия возврата остатка выполнены — вернуть остаток в QDTE</span>`;}
       else{qsig=`Выход в защитный актив 50%. <span class="soft">Ждём возврат остатка (закрытие выше −11,2% + ADX&gt;25 + CHOP&lt;45)</span>`;}
-      qfore=`возврат остатка при закрытии выше <span class="ref">QQQ ${fmt(L.exit)}</span>`;
-      qforeSub=`ADX ${adx.toFixed(1)}, CHOP ${chop.toFixed(1)}`;
+      qfore=`возврат остатка при закрытии выше QQQ — <span class="price">${fmt(L.exit)}</span>`;
     }else{ // OUT
       const okBack1=curW>L.bear&&adx>25&&chop<45;
       if(okBack1){qsig=`Выход в защитный актив 100%. <span class="soft">Условия первого транша выполнены — вернуть 50% в QDTE</span>`;}
       else{qsig=`Выход в защитный актив 100%. <span class="soft">Ждём возврат 50% (закрытие выше −20% + ADX&gt;25 + CHOP&lt;45)</span>`;}
-      qfore=`возврат 50% при закрытии выше <span class="ref">QQQ ${fmt(L.bear)}</span>, затем остаток выше ${fmt(L.exit)}`;
-      qforeSub=`ADX ${adx.toFixed(1)}, CHOP ${chop.toFixed(1)}`;
+      qfore=`возврат 50% при закрытии выше QQQ — <span class="price">${fmt(L.bear)}</span>, затем остаток выше ${fmt(L.exit)}`;
     }
     $('qd-rows').innerHTML=
       `<div class="r status"><span class="lbl">Статус</span><span class="badge ${qCls}"><span class="dot"></span>${qName}</span></div>`+
@@ -371,18 +348,13 @@ $('run').addEventListener('click',async()=>{
     }
     $('qd-health').innerHTML=hHtml;
 
-    // журнал
-    const jline=`${last.d} · ATH ${ath.toFixed(2)} · QQQ ${last.c.toFixed(2)} · ${dd.toFixed(1)}% · TQQQ:${stName} · QDTE:${qName}`;
-    $('jrn').textContent=jline;
-    $('jrn-copy').onclick=()=>navigator.clipboard?.writeText(jline).then(()=>{
-      $('jrn-copy').textContent='скопировано';$('jrn-copy').classList.add('copied');
-      setTimeout(()=>{$('jrn-copy').textContent='копировать в журнал';$('jrn-copy').classList.remove('copied');},1800);});
-
     if(Math.abs(dd)<=0.1){$('warnbar').style.display='';$('warnbar').textContent='QQQ на новом максимуме: пересчитать уровни, переставить алерты.';}
     $('out').style.display='';
-  }catch(e){log('ОШИБКА: '+e.message);$('warnbar').style.display='';$('warnbar').textContent='Ошибка: '+e.message;}
-  finally{$('run').disabled=false;$('run').textContent='Проверить условия';}
-});
+  }catch(e){log('ОШИБКА: '+e.message);$('warnbar').style.display='';$('warnbar').textContent='Ошибка: '+e.message;$('meta').textContent='ошибка загрузки';}
+}
+
+// автозапуск при открытии страницы; обновление — перезагрузкой (F5)
+runAdvisor().then(()=>{window.__loaded=true;});
 </script>
 </body>
 </html>

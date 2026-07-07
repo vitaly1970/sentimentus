@@ -3,3 +3,12 @@
 
 [functions]
   directory = "netlify/functions"
+
+# Индикатор дна использует функцию proxy (CBOE / Yahoo / NAAIM) — вызывается напрямую
+# как /.netlify/functions/proxy, редирект не требуется.
+
+# Советник использует функцию tiingo. Короткий алиас для удобства фронтенда:
+[[redirects]]
+  from = "/api/tiingo"
+  to = "/.netlify/functions/tiingo"
+  status = 200

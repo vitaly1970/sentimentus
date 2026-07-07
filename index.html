@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Barbell · TQQQ + QDTE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+.hero{text-align:center;padding:34px 0 30px}
+.hero h1{font-size:1.8rem;font-weight:600;margin:0;letter-spacing:.01em}
+.hero p{font-size:1rem;color:var(--sec);margin:8px 0 0}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;max-width:740px;margin:0 auto}
+.tile{display:block;text-decoration:none;background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:22px 20px}
+.tile:hover{border-color:var(--accent)}
+.tile .top{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.tile .ic{width:44px;height:44px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:600;font-size:1.15rem}
+.tile h2{font-size:1.1rem;font-weight:600;margin:0}
+.tile p{font-size:.9rem;color:var(--sec);line-height:1.5;margin:0}
+.tile .go{margin-top:14px;font-size:.9rem;font-weight:500;display:flex;align-items:center;gap:5px}
+.tile.disabled{border-style:dashed;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:150px;color:var(--muted)}
+.foot{text-align:center;margin-top:30px;font-family:var(--mono);font-size:.8rem;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <h1>Barbell · TQQQ + QDTE</h1>
+    <p>Инструменты управления портфелем</p>
+  </div>
+
+  <div class="tiles">
+    <a class="tile" href="advisor.html">
+      <div class="top">
+        <span class="ic" style="background:var(--ok-bg);color:var(--ok)">С</span>
+        <h2>Советник</h2>
+      </div>
+      <p>Пятничная проверка обоих крыльев: статус, сигнал и прогноз. Термометры уровней, здоровье выплат, журнал.</p>
+      <div class="go" style="color:var(--ok)">Открыть →</div>
+    </a>
+
+    <a class="tile" href="bottom.html">
+      <div class="top">
+        <span class="ic" style="background:var(--info-bg);color:var(--info)">Д</span>
+        <h2>Индикатор дна</h2>
+      </div>
+      <p>Оценка рыночного дна по совокупности сигналов капитуляции. Отдельный инструмент.</p>
+      <div class="go" style="color:var(--info)">Открыть →</div>
+    </a>
+
+    <a class="tile" href="watchdog.html">
+      <div class="top">
+        <span class="ic" style="background:var(--bear-bg);color:var(--bear)">W</span>
+        <h2>Watchdog</h2>
+      </div>
+      <p>Доска гипотез: тезисы про рынок и свидетельства за/против. Вердикт из баланса весов.</p>
+      <div class="go" style="color:var(--bear)">Открыть →</div>
+    </a>
+  </div>
+
+  <div class="foot">данные Tiingo · обновление по закрытию недели</div>
+</div>
+</body>
+</html>

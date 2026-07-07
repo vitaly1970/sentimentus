@@ -26,6 +26,7 @@ button:hover{background:var(--green);color:#06110C}
 button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 .grid{display:grid;grid-template-columns:230px 1fr;gap:18px}
 @media(max-width:760px){.grid{grid-template-columns:1fr}}
+.rightcol{display:flex;flex-direction:column;gap:18px;justify-content:space-between}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px}
 .panel h2{font-size:11px;text-transform:uppercase;letter-spacing:1.4px;color:var(--ink2);margin-bottom:12px;font-weight:700}
 #status{padding:20px 22px;font-size:22px;font-weight:700;border-radius:10px;margin-bottom:18px;border:2px solid var(--line);background:var(--panel);letter-spacing:.3px}
@@ -49,7 +50,7 @@ button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 #episodes td,#episodes th{font-size:13px;padding:3px 10px 3px 0;text-align:left}
 #episodes th{color:var(--ink2);font-weight:400}
 #episodes td{color:var(--ink)}
-#log{font-size:12px;color:var(--ink2);white-space:pre-line;margin-top:12px;font-family:'PT Mono',monospace;background:var(--panel);padding:12px;border-radius:8px;border:1px solid var(--line)}
+#log{display:none}
 #sources{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
 .src{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);
      border-radius:3px;padding:7px 12px;font-size:13px;min-width:150px}
@@ -78,10 +79,10 @@ button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 <div class="grid">
   <div class="panel"><h2>Композит</h2>
     <svg id="gauge" width="190" height="430" viewBox="0 0 190 430" role="img" aria-label="Шкала композита"></svg></div>
-  <div>
-    <div class="panel" style="margin-bottom:18px"><h2>Компоненты (каузальный ранг, −10 страх … +10 жадность)</h2>
+  <div class="rightcol">
+    <div class="panel"><h2>Компоненты (каузальный ранг, −10 страх … +10 жадность)</h2>
       <div id="components"></div></div>
-    <div class="panel" style="margin-bottom:18px"><h2>TQQQ: просадка от исторического максимума</h2>
+    <div class="panel"><h2>TQQQ: просадка от исторического максимума</h2>
       <div class="ladder" id="ladder"></div></div>
     <div class="panel"><h2>Эпизоды green за последние 12 месяцев</h2>
       <table id="episodes"></table></div>
@@ -436,7 +437,7 @@ async function run() {
 
   if (!fresh(vix)) {
     st.innerHTML = "VIX не загрузился — прибор не может работать." +
-      "<small>Смотрите лог внизу; попробуйте кнопку Обновить через минуту.</small>";
+      "<small>Попробуйте кнопку «Обновить» через минуту.</small>";
     return;
   }
   const baseT = vix.t;

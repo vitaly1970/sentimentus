@@ -42,7 +42,15 @@ table.exp th{color:var(--ink2);font-weight:400;font-family:'PT Sans',sans-serif;
 table.exp td.d{text-align:left}
 .pos{color:var(--grn)} .neg{color:var(--red)}
 .wrap{max-height:420px;overflow:auto}
-#log{font-size:12px;color:var(--ink2);white-space:pre-line;margin-top:14px;font-family:'PT Mono',monospace;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px}
+#log{display:none;font-size:12px;color:var(--ink2);white-space:pre-line;margin-top:14px;font-family:'PT Mono',monospace;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px}
+.lvltable tr.grp td{padding-top:13px;font-family:'PT Sans',sans-serif;font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--ink2);font-weight:700;border-bottom:2px solid var(--line)}
+#analysis.green{border-left:6px solid var(--grn)}
+#analysis.red{border-left:6px solid var(--red)}
+#analysis .ana-part{margin-bottom:12px}
+#analysis .ana-part:last-child{margin-bottom:0}
+#analysis .ana-lbl{font-family:'PT Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--ink2);margin-bottom:3px}
+#analysis .ana-txt{font-size:14px;line-height:1.55;color:var(--ink)}
+#analysis .ana-txt b{font-weight:700}
 .foot{font-size:11px;color:var(--ink2);margin-top:12px;line-height:1.5}
 </style>
 </head>
@@ -64,10 +72,12 @@ table.exp td.d{text-align:left}
 
 <div id="regime">Загрузка…<div class="row"></div></div>
 
+<div class="panel" id="analysis" style="display:none"></div>
+
 <div class="grid">
   <div class="panel">
     <h2>AUTO-GEX уровни (ближние 45 дн)</h2>
-    <svg id="levels" viewBox="0 0 760 460" preserveAspectRatio="xMidYMid meet" role="img"></svg>
+    <svg id="levels" viewBox="0 0 760 560" preserveAspectRatio="xMidYMid meet" role="img"></svg>
   </div>
   <div class="panel">
     <h2>Уровни-магниты</h2>
@@ -317,6 +327,46 @@ async function run() {
   log("готово: " + R.nOptions + " опционов в расчёте");
 }
 
+function nearestAbove(levels, spot){
+  const a = levels.filter(l => l.strike > spot).sort((x,y) => x.strike - y.strike);
+  return a.length ? a[0] : null;
+}
+function nearestBelow(levels, spot){
+  const b = levels.filter(l => l.strike < spot).sort((x,y) => y.strike - x.strike);
+  return b.length ? b[0] : null;
+}
+function analysisHTML(sym, R){
+  const green = R.regime === "green";
+  const flip = R.flip != null ? R.flip.toFixed(0) : "—";
+  const em0 = R.byExpiry.length ? R.byExpiry[0].expMove : null;
+  const emTxt = em0 != null ? ("±" + em0.toFixed(0)) : "—";
+  const cUp = nearestAbove(R.callLevels, R.spot);
+  const pDn = nearestBelow(R.putLevels, R.spot);
+  const cTxt = cUp ? cUp.strike.toFixed(0) : "—";
+  const pTxt = pDn ? pDn.strike.toFixed(0) : "—";
+
+  const cushion = (R.netEx0 < 0 && R.netGex > 0)
+    ? " <b>Важно:</b> вся текущая зелёная гамма держится на сегодняшней 0DTE — после её экспирации подушка уходит, к завтрашнему дню режим может стать красным."
+    : "";
+
+  let mean, forecast, tactic;
+  if (green){
+    mean = "Дилеры в <b>длинной гамме</b> — они гасят колебания: рост подхватывают продажами, провалы выкупают. Рынок склонён «прилипать» к магнитам-сопротивлениям и торговать в диапазоне, всплески волатильности затухают." + cushion;
+    forecast = "Ожидаемый диапазон на сегодня <b>" + emTxt + "</b> (по волатильности ближней экспирации). Пока цена <b>выше флипа " + flip + "</b> — режим «прилипания»: движения тухнут, края диапазона тянет к центру. Ближайший потолок сверху <b>" + cTxt + "</b>, пол снизу <b>" + pTxt + "</b>.";
+    tactic = "Работают возвраты к магнитам и мин-реверсии от краёв (у сопротивлений — продавцы, у поддержек — покупатели). Главный триггер смены — пробой <b>флипа " + flip + " вниз</b>: это переключит рынок в красный режим, где движения начнут усиливаться.";
+  } else {
+    mean = "Дилеры в <b>короткой гамме</b> — они усиливают движение: рост докупают, падение допродают. Импульсы и тренды разгоняются, откаты резче, путы-поддержки держат хуже, чем в спокойном режиме." + cushion;
+    forecast = "Ожидаемый диапазон на сегодня <b>" + emTxt + "</b>, но в короткой гамме реальный ход бывает шире. Пока цена <b>ниже флипа " + flip + "</b> — склонность к расширению и импульсам. Ближайшее сопротивление сверху <b>" + cTxt + "</b>, поддержка снизу <b>" + pTxt + "</b>.";
+    tactic = "Импульсы склонны продолжаться, пробои ускоряются — осторожнее с покупкой отскоков и ловлей ножей; уход под поддержку <b>" + pTxt + "</b> может доускоряться. Ключевой сигнал разворота режима — возврат <b>выше флипа " + flip + "</b>: тогда дилеры снова начнут гасить волатильность.";
+  }
+
+  return "<h2>Что показывает картина · " + sym + " " + R.spot.toFixed(2) + "</h2>" +
+    "<div class='ana-part'><div class='ana-lbl'>Что это значит</div><div class='ana-txt'>" + mean + "</div></div>" +
+    "<div class='ana-part'><div class='ana-lbl'>Прогноз на сегодня · дневной GEX</div><div class='ana-txt'>" + forecast + "</div></div>" +
+    "<div class='ana-part'><div class='ana-lbl'>Тактика</div><div class='ana-txt'>" + tactic + "</div></div>" +
+    "<div class='ana-part'><div class='ana-txt' style='font-size:12px;color:var(--ink2)'>Карта дилерского позиционирования на день (OI обновляется раз в сутки). Аналитика, не сигнал к сделке.</div></div>";
+}
+
 function render(sym, R, log) {
   const reg = document.getElementById("regime");
   reg.className = R.regime;
@@ -333,18 +383,25 @@ function render(sym, R, log) {
     "<span class='" + (fragThin ? "frag-thin" : "") + "'>" + R.fragility + "</span>" +
     "</div>";
 
+  const an = document.getElementById("analysis");
+  an.style.display = "block";
+  an.className = "panel " + R.regime;
+  an.innerHTML = analysisHTML(sym, R);
+
   // ---- levels table ----
   const maxg = Math.max(
     ...R.callLevels.map(l => Math.abs(l.gex)),
     ...R.putLevels.map(l => Math.abs(l.gex)), 1);
-  let h = "";
+  let h = "<tr class='grp'><td colspan='4'>Сопротивления · магниты-потолки сверху</td></tr>";
   R.callLevels.forEach((l, i) => {
     h += "<tr><td class='c'>C" + (i+1) + "</td><td class='k c'>" + l.strike.toFixed(0) +
          "</td><td class='bar'><i style='width:" + (Math.abs(l.gex)/maxg*100) +
          "%;background:var(--grn)'></i></td><td class='k'>" + fmtB(l.gex) + "</td></tr>";
   });
+  h += "<tr class='grp'><td colspan='4'>Флип · граница режима (HVL)</td></tr>";
   h += "<tr><td class='c' style='color:var(--cyn)'>HVL</td><td class='k' style='color:var(--cyn)'>" +
-       (R.flip ? R.flip.toFixed(0) : "—") + "</td><td colspan='2' style='color:var(--ink2);font-size:12px'>zero-gamma flip</td></tr>";
+       (R.flip ? R.flip.toFixed(0) : "—") + "</td><td colspan='2' style='color:var(--ink2);font-size:12px'>выше — гасят волатильность, ниже — раскачивают</td></tr>";
+  h += "<tr class='grp'><td colspan='4'>Поддержки · полы-подушки снизу</td></tr>";
   R.putLevels.forEach((l, i) => {
     h += "<tr><td class='p'>P" + (i+1) + "</td><td class='k p'>" + l.strike.toFixed(0) +
          "</td><td class='bar'><i style='width:" + (Math.abs(l.gex)/maxg*100) +
@@ -374,57 +431,60 @@ function render(sym, R, log) {
 let priceCache = {};
 async function drawLevels(sym, R, maxg) {
   const svg = document.getElementById("levels");
-  const W = 760, H = 460, padL = 8, padR = 210, padT = 24, padB = 24;
-  // gather all level prices to set y-range
+  const W = 760, H = 560, padL = 8, padR = 210, padT = 22, padB = 22;
+  // y-диапазон — ПЛОТНО по зоне уровней (без пустоты от дальней истории цены)
   const lvls = [...R.callLevels.map(l=>l.strike), ...R.putLevels.map(l=>l.strike), R.spot];
   if (R.flip) lvls.push(R.flip);
-  // price history for context (through proxy Yahoo), non-blocking
+  const lo0 = Math.min(...lvls), hi0 = Math.max(...lvls);
+  const pad = Math.max((hi0 - lo0) * 0.10, 2);
+  const lo = lo0 - pad, hi = hi0 + pad;
+
+  // недавняя цена для контекста (последние ~35 дней), через Yahoo-прокси
   let px = priceCache[sym];
   if (!px) {
     try {
       const ysym = sym === "SPX" ? "%5EGSPC" : sym;
       const raw = await fetchJson("https://query1.finance.yahoo.com/v8/finance/chart/" +
-                    ysym + "?range=4mo&interval=1d", ()=>{});
-      const r = raw.chart.result[0], ts = r.timestamp,
-            c = r.indicators.quote[0].close;
+                    ysym + "?range=3mo&interval=1d", ()=>{});
+      const r = raw.chart.result[0], ts = r.timestamp, c = r.indicators.quote[0].close;
       px = ts.map((t,i)=>({t:t*1000, v:c[i]})).filter(p=>p.v!=null);
       priceCache[sym] = px;
     } catch(e) { px = []; }
   }
-  const pv = px.map(p=>p.v);
-  const lo = Math.min(...lvls, ...(pv.length?pv:[R.spot*0.95])) * 0.998;
-  const hi = Math.max(...lvls, ...(pv.length?pv:[R.spot*1.05])) * 1.002;
+  const recent = px.slice(-35);
+
   const y = v => padT + (H - padT - padB) * (1 - (v - lo) / (hi - lo));
-  const x = i => padL + (W - padL - padR) * i / Math.max(px.length - 1, 1);
+  const x = i => padL + (W - padL - padR) * i / Math.max(recent.length - 1, 1);
 
   let s = "<rect x='0' y='0' width='"+W+"' height='"+H+"' fill='#FFFFFF'/>";
-  // price line
-  if (px.length > 1) {
-    let d = "M" + x(0) + "," + y(px[0].v);
-    for (let i=1;i<px.length;i++) d += " L" + x(i) + "," + y(px[i].v);
-    s += "<path d='"+d+"' fill='none' stroke='#17242E' stroke-width='1.4'/>";
+  s += "<clipPath id='plot'><rect x='"+padL+"' y='"+padT+"' width='"+(W-padL-padR)+"' height='"+(H-padT-padB)+"'/></clipPath>";
+  // линия цены (обрезана рамкой зоны уровней)
+  if (recent.length > 1) {
+    let d = "M" + x(0).toFixed(1) + "," + y(recent[0].v).toFixed(1);
+    for (let i=1;i<recent.length;i++) d += " L" + x(i).toFixed(1) + "," + y(recent[i].v).toFixed(1);
+    s += "<path d='"+d+"' fill='none' stroke='#17242E' stroke-width='1.8' clip-path='url(#plot)'/>";
   }
   const xR = W - padR;
   function lvlLine(val, gex, color, label) {
     const yy = y(val), w = Math.abs(gex)/maxg;
     const strong = Math.abs(gex) === maxg;
-    s += "<line x1='"+padL+"' x2='"+xR+"' y1='"+yy+"' y2='"+yy+"' stroke='"+color+
-         "' stroke-width='"+(strong?1.8:1.2)+"' opacity='"+(strong?0.95:0.6)+"'/>";
-    s += "<rect x='"+(xR+6)+"' y='"+(yy-5)+"' width='"+(w*120)+"' height='10' fill='"+color+"' opacity='0.85' rx='2'/>";
-    s += "<text x='"+(xR+6+w*120+6)+"' y='"+(yy+4)+"' font-size='11' font-weight='bold' fill='"+color+
+    s += "<line x1='"+padL+"' x2='"+xR+"' y1='"+yy.toFixed(1)+"' y2='"+yy.toFixed(1)+"' stroke='"+color+
+         "' stroke-width='"+(strong?2.2:1.4)+"' opacity='"+(strong?0.95:0.6)+"'/>";
+    s += "<rect x='"+(xR+6)+"' y='"+(yy-6).toFixed(1)+"' width='"+(w*120).toFixed(1)+"' height='12' fill='"+color+"' opacity='0.85' rx='2'/>";
+    s += "<text x='"+(xR+6+w*120+6).toFixed(1)+"' y='"+(yy+4).toFixed(1)+"' font-size='13' font-weight='bold' fill='"+color+
          "' font-family='PT Mono'>"+label+" "+val.toFixed(0)+"</text>";
   }
   R.callLevels.forEach((l,i)=>lvlLine(l.strike,l.gex,"#0E9F5B","C"+(i+1)));
   R.putLevels.forEach((l,i)=>lvlLine(l.strike,l.gex,"#D63B2F","P"+(i+1)));
   if (R.flip) {
     const yy=y(R.flip);
-    s += "<line x1='"+padL+"' x2='"+xR+"' y1='"+yy+"' y2='"+yy+"' stroke='#0794A8' stroke-width='2'/>";
-    s += "<text x='"+(xR+6)+"' y='"+(yy-6)+"' font-size='11' font-weight='bold' fill='#0794A8' font-family='PT Mono'>HVL "+R.flip.toFixed(0)+"</text>";
+    s += "<line x1='"+padL+"' x2='"+xR+"' y1='"+yy.toFixed(1)+"' y2='"+yy.toFixed(1)+"' stroke='#0794A8' stroke-width='2.4'/>";
+    s += "<text x='"+(xR+6)+"' y='"+(yy-7).toFixed(1)+"' font-size='13' font-weight='bold' fill='#0794A8' font-family='PT Mono'>HVL "+R.flip.toFixed(0)+"</text>";
   }
   // spot
   const ys=y(R.spot);
-  s += "<line x1='"+padL+"' x2='"+xR+"' y1='"+ys+"' y2='"+ys+"' stroke='#17242E' stroke-width='0.8' stroke-dasharray='4 3' opacity='0.6'/>";
-  s += "<text x='"+padL+"' y='"+(ys-4)+"' font-size='11' fill='#17242E' font-family='PT Mono'>spot "+R.spot.toFixed(1)+"</text>";
+  s += "<line x1='"+padL+"' x2='"+xR+"' y1='"+ys.toFixed(1)+"' y2='"+ys.toFixed(1)+"' stroke='#17242E' stroke-width='1' stroke-dasharray='4 3' opacity='0.6'/>";
+  s += "<text x='"+padL+"' y='"+(ys-5).toFixed(1)+"' font-size='13' fill='#17242E' font-family='PT Mono'>spot "+R.spot.toFixed(1)+"</text>";
   svg.innerHTML = s;
 }
 

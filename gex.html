@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GEX — дилерская гамма</title>
+<link href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&family=PT+Mono&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F4F6F8;--panel:#FFFFFF;--ink:#17242E;--ink2:#5A6B78;--line:#D3DBE2;
+--grn:#0E9F5B;--grn2:#12B368;--red:#D63B2F;--cyn:#0794A8;--amber:#C7802E}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'PT Sans',sans-serif;padding:20px;max-width:1140px;margin:0 auto}
+.mono{font-family:'PT Mono',monospace}
+header{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid var(--ink);padding-bottom:10px;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+h1{font-size:20px;font-weight:700}
+h1 small{font-weight:400;color:var(--ink2);font-size:12px;margin-left:8px}
+.controls{display:flex;gap:8px;align-items:center}
+select,button{font-family:inherit;font-size:14px;padding:6px 12px;border:1px solid var(--ink);background:var(--panel);color:var(--ink);border-radius:4px;cursor:pointer}
+button{background:var(--ink);color:#fff;font-weight:700;border:none}
+button:hover{background:#2A3B49}
+#regime{padding:14px 18px;border-radius:8px;margin-bottom:16px;border:1px solid var(--line);background:var(--panel);font-size:15px}
+#regime.green{border-left:6px solid var(--grn);background:#EAF7F0}
+#regime.red{border-left:6px solid var(--red);background:#FBEBEA}
+#regime b{font-size:18px}
+#regime .row{display:flex;gap:26px;flex-wrap:wrap;margin-top:8px;font-size:13px;color:var(--ink2)}
+#regime .row span b{font-size:14px;color:var(--ink)}
+.frag-thin{color:var(--red);font-weight:700}
+.grid{display:grid;grid-template-columns:1fr 340px;gap:16px;margin-bottom:16px}
+@media(max-width:820px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px}
+.panel h2{font-size:11px;text-transform:uppercase;letter-spacing:1.2px;color:var(--ink2);margin-bottom:10px;font-weight:700}
+#levels{width:100%;height:auto}
+.lvltable{width:100%;font-size:13px;border-collapse:collapse}
+.lvltable td{padding:5px 8px;border-bottom:1px solid var(--line)}
+.lvltable .k{font-family:'PT Mono',monospace;font-weight:700;text-align:right}
+.lvltable .c{color:var(--grn)} .lvltable .p{color:var(--red)}
+.lvltable .bar{width:100%}
+.lvltable .bar i{display:inline-block;height:9px;border-radius:2px;vertical-align:middle}
+table.exp{width:100%;border-collapse:collapse;font-size:12px;font-family:'PT Mono',monospace}
+table.exp th,table.exp td{padding:4px 7px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+table.exp th{color:var(--ink2);font-weight:400;font-family:'PT Sans',sans-serif;position:sticky;top:0;background:var(--panel)}
+table.exp td.d{text-align:left}
+.pos{color:var(--grn)} .neg{color:var(--red)}
+.wrap{max-height:420px;overflow:auto}
+#log{font-size:12px;color:var(--ink2);white-space:pre-line;margin-top:14px;font-family:'PT Mono',monospace;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px}
+.foot{font-size:11px;color:var(--ink2);margin-top:12px;line-height:1.5}
+</style>
+</head>
+<body>
+<nav style="margin-bottom:12px">
+  <a href="index.html" style="text-decoration:none;font-size:13px;color:var(--ink2)">← все инструменты</a>
+</nav>
+<header>
+  <h1>GEX — дилерская гамма<small>сборка gex-2 · CBOE delayed 15m · допущение: дилеры лонг-колл/шорт-пут</small></h1>
+  <div class="controls">
+    <select id="sym">
+      <option value="QQQ">QQQ (под TQQQ)</option>
+      <option value="SPX">SPX (весь рынок)</option>
+      <option value="SPY">SPY</option>
+    </select>
+    <button id="run">Рассчитать</button>
+  </div>
+</header>
+
+<div id="regime">Загрузка…<div class="row"></div></div>
+
+<div class="grid">
+  <div class="panel">
+    <h2>AUTO-GEX уровни (ближние 45 дн)</h2>
+    <svg id="levels" viewBox="0 0 760 460" preserveAspectRatio="xMidYMid meet" role="img"></svg>
+  </div>
+  <div class="panel">
+    <h2>Уровни-магниты</h2>
+    <table class="lvltable" id="lvltable"></table>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>По экспирациям</h2>
+  <div class="wrap"><table class="exp" id="exptable"></table></div>
+</div>
+
+<div id="log"></div>
+<p class="foot">HVL/flip — граница режимов: выше — зелёная гамма (рынок липнет к магнитам C-уровней, дилеры гасят волатильность), ниже — красная (движения усиливаются). «Без 0DTE» — завтрашняя подушка после экспирации сегодняшних опционов. OI обновляется раз в сутки; внутридневную смену матрицы срез не видит. Инструмент аналитический — в торговую систему (лестницу, выходы) не встраивается.</p>
+
+<script>
+// ================= ДВИЖОК (паритет с Colab подтверждён) =================
+// gex_engine.js — порт математики gex_analyzer_v2.py на JS.
+// Чистые функции; compute() принимает распарсенный CBOE JSON и настройки.
+
+const RF_DEFAULT = 0.04;
+
+// нормальная плотность (точная) — для гаммы
+function normPdf(x) { return Math.exp(-0.5 * x * x) / Math.sqrt(2 * Math.PI); }
+
+// erf (Abramowitz & Stegun 7.1.26) -> нормальная CDF для дельты
+function erf(x) {
+  const s = x < 0 ? -1 : 1; x = Math.abs(x);
+  const t = 1 / (1 + 0.3275911 * x);
+  const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t
+              - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x);
+  return s * y;
+}
+function normCdf(x) { return 0.5 * (1 + erf(x / Math.SQRT2)); }
+
+function bsmGamma(S, K, tYr, iv, rf = RF_DEFAULT) {
+  const t = Math.max(tYr, 1e-6);
+  const d1 = (Math.log(S / K) + (rf + iv * iv / 2) * t) / (iv * Math.sqrt(t));
+  return normPdf(d1) / (S * iv * Math.sqrt(t));
+}
+function bsmDelta(S, K, tYr, iv, cp, rf = RF_DEFAULT) {
+  const t = Math.max(tYr, 1e-6);
+  const d1 = (Math.log(S / K) + (rf + iv * iv / 2) * t) / (iv * Math.sqrt(t));
+  return cp === "C" ? normCdf(d1) : normCdf(d1) - 1;
+}
+
+// "QQQ260707C00520000" -> {exp:Date(UTC 16:00), cp, strike}
+const OCC = /^(.+?)(\d{6})([PC])(\d{8})$/;
+function parseOCC(sym) {
+  const m = OCC.exec(sym);
+  if (!m) return null;
+  const y = 2000 + (+m[2].slice(0, 2)), mo = (+m[2].slice(2, 4)) - 1, d = +m[2].slice(4, 6);
+  return { exp: new Date(Date.UTC(y, mo, d, 16, 0, 0)), cp: m[3], strike: (+m[4]) / 1000 };
+}
+
+function fmtB(x) {
+  return Math.abs(x) >= 1e9 ? (x / 1e9 >= 0 ? "+" : "") + (x / 1e9).toFixed(2) + "B"
+                            : (x / 1e6 >= 0 ? "+" : "") + (x / 1e6).toFixed(1) + "M";
+}
+
+// data: {current_price, options:[{option, iv, open_interest}]}
+function compute(data, opt = {}) {
+  const rf = opt.rf ?? RF_DEFAULT;
+  const maxDte = opt.maxDte ?? 400;
+  const aggDte = opt.aggDte ?? 45;
+  const nCall = opt.nCall ?? 5, nPut = opt.nPut ?? 3;
+  const nowMs = opt.nowMs ?? Date.now();
+  const spot = +data.current_price;
+
+  // parse + filter
+  const rows = [];
+  for (const o of data.options) {
+    const p = parseOCC(o.option);
+    if (!p) continue;
+    const iv = +o.iv, oi = +o.open_interest || 0;
+    const dte = (p.exp.getTime() - nowMs) / 86400000;
+    if (!(dte > 0 && dte <= maxDte) || !(iv > 0.01) || !(oi > 0)) continue;
+    const tYr = dte / 365;
+    const g = bsmGamma(spot, p.strike, tYr, iv, rf);
+    const d = bsmDelta(spot, p.strike, tYr, iv, p.cp, rf);
+    const sign = p.cp === "C" ? 1 : -1;
+    rows.push({
+      exp: p.exp, expKey: p.exp.toISOString().slice(0, 10), dte, cp: p.cp,
+      strike: p.strike, iv, oi, tYr,
+      gex: sign * spot * spot * g * oi * 100 * 0.01,
+      dex: d * spot * oi * 100, sign,
+    });
+  }
+
+  // --- flip curve (полная гамма как функция гипотетической споты) ---
+  const grid = [];
+  for (let i = 0; i < 121; i++) grid.push(spot * 0.85 + (spot * 0.30) * i / 120);
+  function curve(filterFn) {
+    return grid.map(S => {
+      let s = 0;
+      for (const r of rows) {
+        if (filterFn && !filterFn(r)) continue;
+        s += r.sign * S * S * bsmGamma(S, r.strike, r.tYr, r.iv, rf) * r.oi * 100 * 0.01;
+      }
+      return s;
+    });
+  }
+  function findFlip(tot) {
+    let flip = null;
+    for (let i = 0; i < grid.length - 1; i++) {
+      if (tot[i] * tot[i + 1] <= 0 && tot[i] !== tot[i + 1]) {
+        const x = grid[i] + (0 - tot[i]) * (grid[i + 1] - grid[i]) / (tot[i + 1] - tot[i]);
+        if (flip === null || Math.abs(x - spot) < Math.abs(flip - spot)) flip = x;
+      }
+    }
+    return flip;
+  }
+  const interpAtSpot = tot => {
+    let i = 0; while (i < grid.length - 1 && grid[i + 1] < spot) i++;
+    const f = (spot - grid[i]) / (grid[i + 1] - grid[i]);
+    return tot[i] + f * (tot[i + 1] - tot[i]);
+  };
+
+  const totAll = curve(null);
+  const netGex = interpAtSpot(totAll);
+  const flip = findFlip(totAll);
+  const totEx0 = curve(r => r.dte > 1.0);
+  const netEx0 = interpAtSpot(totEx0);
+  const flipEx0 = findFlip(totEx0);
+
+  const regime = netGex > 0 ? "green" : "red";
+  const dist = flip != null ? (spot - flip) / spot * 100 : null;
+  let fragility;
+  if (dist == null) fragility = "flip вне ±15% — режим прочный";
+  else if (Math.abs(dist) < 0.15) fragility = "НА ФЛИПЕ — режим неопределённый";
+  else if (Math.abs(dist) < 0.75) fragility = `${dist >= 0 ? "+" : ""}${dist.toFixed(2)}% до flip — тонкий лёд`;
+  else if (Math.abs(dist) < 2.0) fragility = `${dist >= 0 ? "+" : ""}${dist.toFixed(2)}% до flip — подушка тонкая`;
+  else fragility = `${dist >= 0 ? "+" : ""}${dist.toFixed(2)}% до flip — уверенный запас`;
+
+  // --- профиль по страйкам (ближние aggDte) -> уровни ---
+  const near = rows.filter(r => r.dte <= aggDte);
+  const byStrike = new Map();
+  for (const r of near) byStrike.set(r.strike, (byStrike.get(r.strike) || 0) + r.gex);
+  const above = [...byStrike].filter(([k, v]) => k > spot && v > 0).sort((a, b) => b[1] - a[1]);
+  const below = [...byStrike].filter(([k, v]) => k < spot && v < 0).sort((a, b) => a[1] - b[1]);
+  const callLevels = above.slice(0, nCall).map(([k, v]) => ({ strike: k, gex: v }));
+  const putLevels = below.slice(0, nPut).map(([k, v]) => ({ strike: k, gex: v }));
+
+  // --- таблица по экспирациям ---
+  const expMap = new Map();
+  for (const r of rows) {
+    if (!expMap.has(r.expKey)) expMap.set(r.expKey, []);
+    expMap.get(r.expKey).push(r);
+  }
+  const byExpiry = [];
+  for (const [key, g] of expMap) {
+    const dte = g[0].dte;
+    let gexSum = 0, dexSum = 0, oiSum = 0;
+    const cr = new Map(), ps = new Map();
+    for (const r of g) {
+      gexSum += r.gex; dexSum += r.dex; oiSum += r.oi;
+      if (r.strike > spot) cr.set(r.strike, (cr.get(r.strike) || 0) + r.gex);
+      if (r.strike < spot) ps.set(r.strike, (ps.get(r.strike) || 0) + r.gex);
+    }
+    const posCr = [...cr].filter(([k, v]) => v > 0).sort((a, b) => b[1] - a[1]);
+    const negPs = [...ps].filter(([k, v]) => v < 0).sort((a, b) => a[1] - b[1]);
+    const atm = [...g].sort((a, b) => Math.abs(a.strike - spot) - Math.abs(b.strike - spot)).slice(0, 4);
+    const ivm = atm.reduce((s, r) => s + r.iv, 0) / Math.max(atm.length, 1);
+    const em = spot * ivm * Math.sqrt(Math.max(dte, 0.5) / 365);
+    byExpiry.push({
+      expiry: key, dte: Math.round(dte), gex: gexSum, dex: dexSum, oi: Math.round(oiSum),
+      callRes: posCr.length ? posCr[0][0] : null, putSup: negPs.length ? negPs[0][0] : null,
+      expMove: +em.toFixed(1),
+    });
+  }
+  byExpiry.sort((a, b) => a.dte - b.dte);
+  const gexAbsTot = byExpiry.reduce((s, r) => s + Math.abs(r.gex), 0) || 1;
+  byExpiry.forEach(r => r.gexPct = +(Math.abs(r.gex) / gexAbsTot * 100).toFixed(1));
+
+  return { spot, netGex, netEx0, flip, flipEx0, regime, dist, fragility,
+           callLevels, putLevels, byExpiry, nOptions: rows.length };
+}
+
+
+// ================= ЗАГРУЗКА =================
+const PROXY = "/.netlify/functions/proxy?url=";      // тот же прокси, что у индикатора
+const FALLBACK = ["https://api.allorigins.win/raw?url=",
+                  "https://api.codetabs.com/v1/proxy?quest="];
+async function fetchJson(url, log) {
+  const routes = [PROXY, ...FALLBACK];
+  for (let i = 0; i < routes.length; i++) {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 30000);
+    try {
+      const r = await fetch(routes[i] + encodeURIComponent(url),
+                            {cache: "no-store", signal: ctl.signal});
+      clearTimeout(timer);
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      const t = await r.text();
+      if (t.length < 500) throw new Error("короткий ответ");
+      return JSON.parse(t);
+    } catch (e) {
+      clearTimeout(timer);
+      log("… маршрут " + (i + 1) + "/" + routes.length + ": " +
+          (e.name === "AbortError" ? "таймаут" : e.message));
+    }
+  }
+  return null;
+}
+
+async function run() {
+  const sym = document.getElementById("sym").value;
+  const logEl = document.getElementById("log"); logEl.textContent = "";
+  const log = m => { logEl.textContent += m + "\n"; };
+  const reg = document.getElementById("regime");
+  reg.className = ""; reg.innerHTML = "Загрузка цепочки " + sym + "…<div class='row'></div>";
+  document.getElementById("run").disabled = true;
+
+  const cboeSym = ["SPX","NDX","RUT","VIX","DJX"].includes(sym) ? "_" + sym : sym;
+  const url = "https://cdn.cboe.com/api/global/delayed_quotes/options/" + cboeSym + ".json";
+  log("→ запрашиваю цепочку " + sym + " (SPX большая, до минуты)…");
+  const t0 = performance.now();
+  const raw = await fetchJson(url, log);
+  document.getElementById("run").disabled = false;
+  if (!raw || !raw.data) {
+    reg.className = "red";
+    reg.innerHTML = "Не удалось загрузить цепочку " + sym +
+      ".<div class='row'>Смотрите лог ниже; попробуйте ещё раз.</div>";
+    return;
+  }
+  log("✓ загружено за " + ((performance.now() - t0) / 1000).toFixed(1) + " с, считаю гамму…");
+  await new Promise(r => setTimeout(r, 20));
+
+  let R;
+  try { R = compute(raw.data, {}); }
+  catch (e) { reg.className = "red"; reg.innerHTML = "Ошибка расчёта: " + e.message; return; }
+  render(sym, R, log);
+  log("готово: " + R.nOptions + " опционов в расчёте");
+}
+
+function render(sym, R, log) {
+  const reg = document.getElementById("regime");
+  reg.className = R.regime;
+  const regTxt = R.regime === "green" ? "ЗЕЛЁНАЯ гамма — дилеры гасят волатильность"
+                                      : "КРАСНАЯ гамма — дилеры раскачивают движение";
+  const fragThin = /тонкий лёд|НА ФЛИПЕ/.test(R.fragility);
+  reg.innerHTML =
+    "<b>" + sym + " " + R.spot.toFixed(2) + "</b> &nbsp; " + regTxt +
+    "<div class='row'>" +
+    "<span>NET GEX: <b>" + fmtB(R.netGex) + "</b></span>" +
+    "<span>без 0DTE: <b>" + fmtB(R.netEx0) + "</b>" +
+      (R.flipEx0 ? " (flip " + R.flipEx0.toFixed(0) + ")" : "") + "</span>" +
+    "<span>HVL/flip: <b>" + (R.flip ? R.flip.toFixed(1) : "—") + "</b></span>" +
+    "<span class='" + (fragThin ? "frag-thin" : "") + "'>" + R.fragility + "</span>" +
+    "</div>";
+
+  // ---- levels table ----
+  const maxg = Math.max(
+    ...R.callLevels.map(l => Math.abs(l.gex)),
+    ...R.putLevels.map(l => Math.abs(l.gex)), 1);
+  let h = "";
+  R.callLevels.forEach((l, i) => {
+    h += "<tr><td class='c'>C" + (i+1) + "</td><td class='k c'>" + l.strike.toFixed(0) +
+         "</td><td class='bar'><i style='width:" + (Math.abs(l.gex)/maxg*100) +
+         "%;background:var(--grn)'></i></td><td class='k'>" + fmtB(l.gex) + "</td></tr>";
+  });
+  h += "<tr><td class='c' style='color:var(--cyn)'>HVL</td><td class='k' style='color:var(--cyn)'>" +
+       (R.flip ? R.flip.toFixed(0) : "—") + "</td><td colspan='2' style='color:var(--ink2);font-size:12px'>zero-gamma flip</td></tr>";
+  R.putLevels.forEach((l, i) => {
+    h += "<tr><td class='p'>P" + (i+1) + "</td><td class='k p'>" + l.strike.toFixed(0) +
+         "</td><td class='bar'><i style='width:" + (Math.abs(l.gex)/maxg*100) +
+         "%;background:var(--red)'></i></td><td class='k'>" + fmtB(l.gex) + "</td></tr>";
+  });
+  document.getElementById("lvltable").innerHTML = h;
+
+  // ---- SVG levels chart (light, Tanuki-style) ----
+  drawLevels(sym, R, maxg);
+
+  // ---- expiry table ----
+  let e = "<tr><th class='d'>экспирация</th><th>DTE</th><th>GEX</th><th>%</th>" +
+          "<th>DEX</th><th>OI</th><th>call res</th><th>put sup</th><th>±move</th></tr>";
+  for (const r of R.byExpiry) {
+    e += "<tr><td class='d'>" + r.expiry + "</td><td>" + r.dte + "</td>" +
+         "<td class='" + (r.gex>=0?"pos":"neg") + "'>" + fmtB(r.gex) + "</td>" +
+         "<td>" + r.gexPct.toFixed(1) + "</td>" +
+         "<td class='" + (r.dex>=0?"pos":"neg") + "'>" + fmtB(r.dex) + "</td>" +
+         "<td>" + r.oi.toLocaleString() + "</td>" +
+         "<td>" + (r.callRes?r.callRes.toFixed(0):"—") + "</td>" +
+         "<td>" + (r.putSup?r.putSup.toFixed(0):"—") + "</td>" +
+         "<td>" + r.expMove.toFixed(0) + "</td></tr>";
+  }
+  document.getElementById("exptable").innerHTML = e;
+}
+
+let priceCache = {};
+async function drawLevels(sym, R, maxg) {
+  const svg = document.getElementById("levels");
+  const W = 760, H = 460, padL = 8, padR = 210, padT = 24, padB = 24;
+  // gather all level prices to set y-range
+  const lvls = [...R.callLevels.map(l=>l.strike), ...R.putLevels.map(l=>l.strike), R.spot];
+  if (R.flip) lvls.push(R.flip);
+  // price history for context (through proxy Yahoo), non-blocking
+  let px = priceCache[sym];
+  if (!px) {
+    try {
+      const ysym = sym === "SPX" ? "%5EGSPC" : sym;
+      const raw = await fetchJson("https://query1.finance.yahoo.com/v8/finance/chart/" +
+                    ysym + "?range=4mo&interval=1d", ()=>{});
+      const r = raw.chart.result[0], ts = r.timestamp,
+            c = r.indicators.quote[0].close;
+      px = ts.map((t,i)=>({t:t*1000, v:c[i]})).filter(p=>p.v!=null);
+      priceCache[sym] = px;
+    } catch(e) { px = []; }
+  }
+  const pv = px.map(p=>p.v);
+  const lo = Math.min(...lvls, ...(pv.length?pv:[R.spot*0.95])) * 0.998;
+  const hi = Math.max(...lvls, ...(pv.length?pv:[R.spot*1.05])) * 1.002;
+  const y = v => padT + (H - padT - padB) * (1 - (v - lo) / (hi - lo));
+  const x = i => padL + (W - padL - padR) * i / Math.max(px.length - 1, 1);
+
+  let s = "<rect x='0' y='0' width='"+W+"' height='"+H+"' fill='#FFFFFF'/>";
+  // price line
+  if (px.length > 1) {
+    let d = "M" + x(0) + "," + y(px[0].v);
+    for (let i=1;i<px.length;i++) d += " L" + x(i) + "," + y(px[i].v);
+    s += "<path d='"+d+"' fill='none' stroke='#17242E' stroke-width='1.4'/>";
+  }
+  const xR = W - padR;
+  function lvlLine(val, gex, color, label) {
+    const yy = y(val), w = Math.abs(gex)/maxg;
+    const strong = Math.abs(gex) === maxg;
+    s += "<line x1='"+padL+"' x2='"+xR+"' y1='"+yy+"' y2='"+yy+"' stroke='"+color+
+         "' stroke-width='"+(strong?1.8:1.2)+"' opacity='"+(strong?0.95:0.6)+"'/>";
+    s += "<rect x='"+(xR+6)+"' y='"+(yy-5)+"' width='"+(w*120)+"' height='10' fill='"+color+"' opacity='0.85' rx='2'/>";
+    s += "<text x='"+(xR+6+w*120+6)+"' y='"+(yy+4)+"' font-size='11' font-weight='bold' fill='"+color+
+         "' font-family='PT Mono'>"+label+" "+val.toFixed(0)+"</text>";
+  }
+  R.callLevels.forEach((l,i)=>lvlLine(l.strike,l.gex,"#0E9F5B","C"+(i+1)));
+  R.putLevels.forEach((l,i)=>lvlLine(l.strike,l.gex,"#D63B2F","P"+(i+1)));
+  if (R.flip) {
+    const yy=y(R.flip);
+    s += "<line x1='"+padL+"' x2='"+xR+"' y1='"+yy+"' y2='"+yy+"' stroke='#0794A8' stroke-width='2'/>";
+    s += "<text x='"+(xR+6)+"' y='"+(yy-6)+"' font-size='11' font-weight='bold' fill='#0794A8' font-family='PT Mono'>HVL "+R.flip.toFixed(0)+"</text>";
+  }
+  // spot
+  const ys=y(R.spot);
+  s += "<line x1='"+padL+"' x2='"+xR+"' y1='"+ys+"' y2='"+ys+"' stroke='#17242E' stroke-width='0.8' stroke-dasharray='4 3' opacity='0.6'/>";
+  s += "<text x='"+padL+"' y='"+(ys-4)+"' font-size='11' fill='#17242E' font-family='PT Mono'>spot "+R.spot.toFixed(1)+"</text>";
+  svg.innerHTML = s;
+}
+
+document.getElementById("run").addEventListener("click", run);
+run();
+</script>
+</body>
+</html>

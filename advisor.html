@@ -13,6 +13,7 @@
 .state-row select{font-size:.85rem;font-family:var(--mono);padding:6px 10px;border:1px solid var(--rule2);border-radius:6px;background:#fff;color:var(--ink)}
 
 .warnbar{background:var(--red-bg);border:1px solid var(--red-dot);color:var(--red);border-radius:9px;padding:11px 15px;font-size:.9rem;margin-bottom:15px;display:none}
+.livehint{color:var(--red);font-size:.8rem;line-height:1.45;margin:-4px 0 15px}
 
 .wing{background:var(--surf);border:1px solid var(--rule);border-radius:13px;padding:18px 20px;margin-bottom:14px}
 .wing-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;gap:10px;flex-wrap:wrap}
@@ -87,6 +88,8 @@
 
   <div class="warnbar" id="warnbar"></div>
 
+  <div class="livehint">Все цифры — внутридневные (Tiingo IEX). Сигнал выхода/возврата читается по закрытию недели — в пятницу вечером.</div>
+
   <div id="out" style="display:none">
     <div class="wing">
       <div class="wing-head"><span class="wing-title">TQQQ</span><span class="wing-nums" id="tq-nums"></span></div>
@@ -130,6 +133,26 @@ async function getData(sym,start){
   return rows;
 }
 
+/* ---- живая (внутридневная) цена через IEX ---- */
+async function getLive(sym){
+  const r=await fetch(`/api/tiingo?symbol=${encodeURIComponent(sym)}&mode=iex`);
+  const js=await r.json();
+  if(!r.ok||js.error)throw new Error(js.error?`${sym} live: ${js.error}`:`${sym} live: HTTP ${r.status}`);
+  const q=Array.isArray(js)?js[0]:js;
+  const p=q&&(q.tngoLast!=null?q.tngoLast:(q.last!=null?q.last:q.prevClose));
+  if(p==null||!isFinite(+p))throw new Error(`${sym} live: нет цены`);
+  log(`${sym}: живая ${(+p).toFixed(2)} (IEX)`);
+  return +p;
+}
+
+/* ---- ISO-неделя (для определения текущей недели) ---- */
+function isoWeekKey(dt){
+  const day=(dt.getUTCDay()+6)%7,th=new Date(dt);th.setUTCDate(dt.getUTCDate()-day+3);
+  const y=th.getUTCFullYear(),j4=new Date(Date.UTC(y,0,4));
+  const w=1+Math.round(((th-j4)/864e5-3+((j4.getUTCDay()+6)%7))/7);
+  return y*100+w;
+}
+
 /* ---- индикаторы (порт из бэктеста, сверено с TradingView) ---- */
 function ewm(a,al){const o=new Array(a.length);let s=a[0]||0;o[0]=s;for(let i=1;i<a.length;i++){s=al*a[i]+(1-al)*s;o[i]=s;}return o;}
 function adxChop(rows,n=14){
@@ -167,12 +190,17 @@ function thermTQQQ(ath,cur,tqCur,tqAth){
     `<text x="314" y="${y+5}" fill="${col}" font-weight="${fw}">${pR}</text>`+
     `<text x="200" y="${y+5}" fill="${col}" text-anchor="middle" font-weight="${fw}">${dd}</text>`;};
   let g=R(Y.ath,fmt(ath),'ATH','','var(--sec)',false);
+  // подписи текущей цены не должны налезать на соседние уровни (ATH сверху, −5,3% снизу):
+  // сама точка и линия остаются на правдивом месте, сдвигаются только подписи
+  const GAP=16;let yTxt=yCur;
+  if(yTxt-Y.ath<GAP)yTxt=Y.ath+GAP;
+  if(Y.yellow-yTxt<GAP)yTxt=Y.yellow-GAP;
   g+=`<line x1="100" y1="${yCur}" x2="300" y2="${yCur}" stroke="#378ADD" stroke-dasharray="3 4" opacity="0.4"/>`+
      `<circle cx="100" cy="${yCur}" r="8" fill="#378ADD" stroke="var(--surf)" stroke-width="2"/>`+
      `<circle cx="300" cy="${yCur}" r="8" fill="#378ADD" stroke="var(--surf)" stroke-width="2"/>`+
-     `<text x="86" y="${yCur+5}" fill="var(--ink)" text-anchor="end" font-weight="600">${fmt(cur)}</text>`+
-     `<text x="314" y="${yCur+5}" fill="var(--ink)" font-weight="600">${fmt(tqCur)}</text>`+
-     `<text x="200" y="${yCur+5}" fill="var(--ink)" text-anchor="middle" font-weight="600">${ddCur.toFixed(1)}%</text>`;
+     `<text x="86" y="${yTxt+5}" fill="var(--ink)" text-anchor="end" font-weight="600">${fmt(cur)}</text>`+
+     `<text x="314" y="${yTxt+5}" fill="var(--ink)" font-weight="600">${fmt(tqCur)}</text>`+
+     `<text x="200" y="${yTxt+5}" fill="var(--ink)" text-anchor="middle" font-weight="600">${ddCur.toFixed(1)}%</text>`;
   g+=R(Y.yellow,fmt(L.yellow),f1(tq('yellow')),'−5,3%','#7E4A0A',true);
   g+=R(Y.exit,fmt(L.exit),f1(tq('exit')),'−11,2%','#9E2B2B',true);
   g+=R(Y.t1,fmt(L.t1),f1(tq('t1')),'−20,6%','var(--sec)',false);
@@ -214,31 +242,42 @@ async function runAdvisor(){
   $('meta').textContent='загрузка данных…';
   try{
     const q=await getData('QQQ','1999-01-01');
+    let qqqLive=null;try{qqqLive=await getLive('QQQ');}catch(e){log('QQQ live: '+e.message);}
     let tqCur=null,tqAth=null;
-    try{const t=await getData('TQQQ','2010-02-01');tqCur=t[t.length-1].c;tqAth=Math.max(...t.map(r=>r.c));}
+    try{const t=await getData('TQQQ','2010-02-01');tqAth=Math.max(...t.map(r=>r.c));
+      let tl=null;try{tl=await getLive('TQQQ');}catch(e){log('TQQQ live: '+e.message);}
+      tqCur=(tl!=null?tl:t[t.length-1].c);}
     catch(e){log('TQQQ: '+e.message);}
     let qdCur=null,qdDivs=null;
-    try{const qd=await getData('QDTE','2024-03-01');qdCur=qd[qd.length-1].c;
+    try{const qd=await getData('QDTE','2024-03-01');
+      let ql=null;try{ql=await getLive('QDTE');}catch(e){log('QDTE live: '+e.message);}
+      qdCur=(ql!=null?ql:qd[qd.length-1].c);
       qdDivs=qd.filter(r=>r.div>0).map(r=>({d:r.d,a:r.div}));}
     catch(e){log('QDTE: '+e.message);}
 
     const last=q[q.length-1],ath=Math.max(...q.map(r=>r.c));
-    const dd=100*(last.c/ath-1);
+    const live=(qqqLive!=null);            // удалось ли получить внутридневную цену
+    const cur=(live?qqqLive:last.c);       // «текущая» цена QQQ: живая, иначе последнее закрытие
+    const dd=100*(cur/ath-1);
     const {adx,chop}=adxChop(q);
-    const wk=weeklyCloses(q),curW=wk[wk.length-1].c,prevW=wk[wk.length-2].c;
+    // недельный сигнал: живая цена = предварительное закрытие текущей недели
+    const wk=weeklyCloses(q);
+    const nowKey=isoWeekKey(new Date()),lastBarKey=wk[wk.length-1].key;
+    const curW=cur;
+    const prevW=(lastBarKey===nowKey?wk[wk.length-2].c:wk[wk.length-1].c);
     const lastDate=new Date(last.d+'T12:00:00Z'),dow=lastDate.getUTCDay();
     const fri=new Date(lastDate);fri.setUTCDate(lastDate.getUTCDate()+((5-dow+7)%7));fri.setUTCHours(22,0,0,0);
     const weekDone=dow===5||Date.now()>fri.getTime();
     const stale=Math.round((Date.now()-lastDate.getTime())/864e5);
-    $('meta').textContent=`бар ${last.d}`+(stale>4?` · устарело ${stale} дн.`:'')+(weekDone?' · неделя закрыта':' · неделя не закрыта');
+    $('meta').textContent=`бар ${last.d}`+(stale>4?` · устарело ${stale} дн.`:'')+(weekDone?' · неделя закрыта':' · неделя не закрыта')+(live?' · цена LIVE':' · цена: закрытие');
 
     const L={};for(const k in MULT)L[k]=ath*MULT[k];
-    const tqAt=k=>tqCur?tqCur*Math.pow(L[k]/last.c,3):null;
+    const tqAt=k=>tqCur?tqCur*Math.pow(L[k]/cur,3):null;
 
     /* ===== TQQQ ===== */
-    $('tq-nums').innerHTML=`QQQ <b>${fmt(last.c)}</b> · ATH <b>${fmt(ath)}</b>`+
+    $('tq-nums').innerHTML=`QQQ <b>${fmt(cur)}</b> · ATH <b>${fmt(ath)}</b>`+
       (tqCur?` &nbsp;|&nbsp; TQQQ <b>${fmt(tqCur)}</b>`:'');
-    $('tq-therm').innerHTML=tqCur?thermTQQQ(ath,last.c,tqCur,tqAth):
+    $('tq-therm').innerHTML=tqCur?thermTQQQ(ath,cur,tqCur,tqAth):
       `<div style="color:var(--sec);font-size:.9rem;padding:16px 0">Цена TQQQ недоступна. Уровни QQQ: выход ${fmt(L.exit)}, транши ${fmt(L.t1)}/${fmt(L.t2)}/${fmt(L.t3)}.</div>`;
 
     // статус (цвет от просадки QQQ)
@@ -292,7 +331,7 @@ async function runAdvisor(){
 
     /* ===== QDTE ===== */
     $('qd-nums').innerHTML=(qdCur?`QDTE <b>${fmt(qdCur)}</b> <span class="ref">(справочно)</span> · `:'')+`ADX ${adx.toFixed(1)} · CHOP ${chop.toFixed(1)}`;
-    $('qd-therm').innerHTML=thermQDTE(ath,last.c);
+    $('qd-therm').innerHTML=thermQDTE(ath,cur);
 
     // статус QDTE = тот же цвет от просадки
     let qName=stName,qCls=stCls;

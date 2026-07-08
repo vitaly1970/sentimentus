@@ -281,11 +281,25 @@ async function run() {
   reg.className = ""; reg.innerHTML = "Загрузка цепочки " + sym + "…<div class='row'></div>";
   document.getElementById("run").disabled = true;
 
-  const cboeSym = ["SPX","NDX","RUT","VIX","DJX"].includes(sym) ? "_" + sym : sym;
-  const url = "https://cdn.cboe.com/api/global/delayed_quotes/options/" + cboeSym + ".json";
-  log("→ запрашиваю цепочку " + sym + " (SPX большая, до минуты)…");
+  log("→ запрашиваю цепочку " + sym + " (срез на сервере)…");
   const t0 = performance.now();
-  const raw = await fetchJson(url, log);
+  let raw = null;
+  try {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 30000);
+    const r = await fetch("/.netlify/functions/cboe?symbol=" + encodeURIComponent(sym),
+                          {cache: "no-store", signal: ctl.signal});
+    clearTimeout(timer);
+    if (!r.ok) {
+      let msg = "HTTP " + r.status;
+      try { const j = await r.json(); if (j && j.error) msg += " · " + j.error; } catch (e) {}
+      throw new Error(msg);
+    }
+    raw = await r.json();
+    log("… контрактов после среза: " + (raw.data ? raw.data.options.length : 0));
+  } catch (e) {
+    log("… " + (e.name === "AbortError" ? "таймаут (30 с)" : e.message));
+  }
   document.getElementById("run").disabled = false;
   if (!raw || !raw.data) {
     reg.className = "red";

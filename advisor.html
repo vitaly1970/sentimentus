@@ -13,7 +13,7 @@
 .state-row select{font-size:.85rem;font-family:var(--mono);padding:6px 10px;border:1px solid var(--rule2);border-radius:6px;background:#fff;color:var(--ink)}
 
 .warnbar{background:var(--red-bg);border:1px solid var(--red-dot);color:var(--red);border-radius:9px;padding:11px 15px;font-size:.9rem;margin-bottom:15px;display:none}
-.livehint{color:var(--red);font-size:.8rem;line-height:1.45;margin:-4px 0 15px}
+.livehint{color:#EF3340;font-size:.8rem;line-height:1.45;margin-top:12px}
 
 .wing{background:var(--surf);border:1px solid var(--rule);border-radius:13px;padding:18px 20px;margin-bottom:14px}
 .wing-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;gap:10px;flex-wrap:wrap}
@@ -87,8 +87,6 @@
   </div>
 
   <div class="warnbar" id="warnbar"></div>
-
-  <div class="livehint">Все цифры — внутридневные (Tiingo IEX). Сигнал выхода/возврата читается по закрытию недели — в пятницу вечером.</div>
 
   <div id="out" style="display:none">
     <div class="wing">
@@ -186,9 +184,9 @@ function thermTQQQ(ath,cur,tqCur,tqAth){
   const R=(y,pL,pR,dd,col,b)=>{const w=b?4:2.5,fw=b?'600':'400';
     return`<line x1="92" y1="${y}" x2="108" y2="${y}" stroke="${col}" stroke-width="${w}"/>`+
     `<line x1="292" y1="${y}" x2="308" y2="${y}" stroke="${col}" stroke-width="${w}"/>`+
-    `<text x="86" y="${y+5}" fill="${col}" text-anchor="end" font-weight="${fw}">${pL}</text>`+
-    `<text x="314" y="${y+5}" fill="${col}" font-weight="${fw}">${pR}</text>`+
-    `<text x="200" y="${y+5}" fill="${col}" text-anchor="middle" font-weight="${fw}">${dd}</text>`;};
+    `<text x="86" y="${y+5}" fill="var(--ink)" text-anchor="end" font-weight="${fw}">${pL}</text>`+
+    `<text x="314" y="${y+5}" fill="var(--ink)" font-weight="${fw}">${pR}</text>`+
+    `<text x="200" y="${y+5}" fill="var(--ink)" text-anchor="middle" font-weight="${fw}">${dd}</text>`;};
   let g=R(Y.ath,fmt(ath),'ATH','','var(--sec)',false);
   // подписи текущей цены не должны налезать на соседние уровни (ATH сверху, −5,3% снизу):
   // сама точка и линия остаются на правдивом месте, сдвигаются только подписи
@@ -198,9 +196,9 @@ function thermTQQQ(ath,cur,tqCur,tqAth){
   g+=`<line x1="100" y1="${yCur}" x2="300" y2="${yCur}" stroke="#378ADD" stroke-dasharray="3 4" opacity="0.4"/>`+
      `<circle cx="100" cy="${yCur}" r="8" fill="#378ADD" stroke="var(--surf)" stroke-width="2"/>`+
      `<circle cx="300" cy="${yCur}" r="8" fill="#378ADD" stroke="var(--surf)" stroke-width="2"/>`+
-     `<text x="86" y="${yTxt+5}" fill="var(--ink)" text-anchor="end" font-weight="600">${fmt(cur)}</text>`+
-     `<text x="314" y="${yTxt+5}" fill="var(--ink)" font-weight="600">${fmt(tqCur)}</text>`+
-     `<text x="200" y="${yTxt+5}" fill="var(--ink)" text-anchor="middle" font-weight="600">${ddCur.toFixed(1)}%</text>`;
+     `<text x="86" y="${yTxt+5}" fill="#378ADD" text-anchor="end" font-weight="600">${fmt(cur)}</text>`+
+     `<text x="314" y="${yTxt+5}" fill="#378ADD" font-weight="600">${fmt(tqCur)}</text>`+
+     `<text x="200" y="${yTxt+5}" fill="#378ADD" text-anchor="middle" font-weight="600">${ddCur.toFixed(1)}%</text>`;
   g+=R(Y.yellow,fmt(L.yellow),f1(tq('yellow')),'−5,3%','#7E4A0A',true);
   g+=R(Y.exit,fmt(L.exit),f1(tq('exit')),'−11,2%','#9E2B2B',true);
   g+=R(Y.t1,fmt(L.t1),f1(tq('t1')),'−20,6%','var(--sec)',false);
@@ -220,13 +218,13 @@ function thermQDTE(ath,cur){
   const L={yellow:ath*MULT.yellow,exit:ath*MULT.exit,bear:ath*MULT.bear};
   const yCur=Math.max(70,30+(112-30)*Math.min(1,(-ddCur)/5.3));
   const row=(y,p,t,col)=>`<line x1="92" y1="${y}" x2="108" y2="${y}" stroke="${col}" stroke-width="4"/>`+
-    `<text x="86" y="${y+5}" fill="${col}" text-anchor="end" font-weight="600">${p}</text>`+
-    `<text x="116" y="${y+5}" fill="${col}" font-weight="600">${t}</text>`;
+    `<text x="86" y="${y+5}" fill="var(--ink)" text-anchor="end" font-weight="600">${p}</text>`+
+    `<text x="116" y="${y+5}" fill="var(--ink)" font-weight="600">${t}</text>`;
   let g=`<line x1="92" y1="30" x2="108" y2="30" stroke="var(--rule2)" stroke-width="2.5"/>`+
-    `<text x="86" y="35" fill="var(--sec)" text-anchor="end">${fmt(ath)}</text><text x="116" y="35" fill="var(--muted)" font-size="12">ATH</text>`;
+    `<text x="86" y="35" fill="var(--ink)" text-anchor="end">${fmt(ath)}</text><text x="116" y="35" fill="var(--muted)" font-size="12">ATH</text>`;
   g+=`<circle cx="100" cy="${yCur}" r="8" fill="#378ADD" stroke="var(--surf)" stroke-width="2"/>`+
-    `<text x="86" y="${yCur+5}" fill="var(--ink)" text-anchor="end" font-weight="600">${fmt(cur)}</text>`+
-    `<text x="116" y="${yCur+5}" fill="var(--ok)" font-weight="600">${ddCur.toFixed(1)}% · норма</text>`;
+    `<text x="86" y="${yCur+5}" fill="#378ADD" text-anchor="end" font-weight="600">${fmt(cur)}</text>`+
+    `<text x="116" y="${yCur+5}" fill="#378ADD" font-weight="600">${ddCur.toFixed(1)}% · норма</text>`;
   g+=row(132,fmt(L.yellow),'−5,3% · жёлтый','#7E4A0A');
   g+=row(210,fmt(L.exit),'−11,2% · красный','#9E2B2B');
   g+=row(330,fmt(L.bear),'−20,0% · медвежий','#26215C');
@@ -327,7 +325,8 @@ async function runAdvisor(){
     $('tq-rows').innerHTML=
       `<div class="r status"><span class="lbl">Статус</span><span class="badge ${stCls}"><span class="dot"></span>${stName}</span></div>`+
       `<div class="r"><div class="lbl">Сигнал</div><div class="sig">${sig}</div></div>`+
-      `<div class="r"><div class="lbl">Прогноз</div><div class="fore">${fore}${foreSub?`<div class="sub">${foreSub}</div>`:''}</div></div>`;
+      `<div class="r"><div class="lbl">Прогноз</div><div class="fore">${fore}${foreSub?`<div class="sub">${foreSub}</div>`:''}</div></div>`+
+      `<div class="livehint">Все цифры — внутридневные (Tiingo IEX). Сигнал выхода/возврата читается по закрытию недели — в пятницу вечером.</div>`;
 
     /* ===== QDTE ===== */
     $('qd-nums').innerHTML=(qdCur?`QDTE <b>${fmt(qdCur)}</b> <span class="ref">(справочно)</span> · `:'')+`ADX ${adx.toFixed(1)} · CHOP ${chop.toFixed(1)}`;

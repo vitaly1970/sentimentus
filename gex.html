@@ -44,12 +44,15 @@ table.exp td.d{text-align:left}
 .wrap{max-height:420px;overflow:auto}
 #log{display:none;font-size:12px;color:var(--ink2);white-space:pre-line;margin-top:14px;font-family:'PT Mono',monospace;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px}
 .lvltable tr.grp td{padding-top:13px;font-family:'PT Sans',sans-serif;font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--ink2);font-weight:700;border-bottom:2px solid var(--line)}
+.lvlnote{font-size:12.5px;line-height:1.5;color:var(--ink2);margin:-4px 0 12px}
+#analysis{margin-top:20px;padding:22px 26px}
 #analysis.green{border-left:6px solid var(--grn)}
 #analysis.red{border-left:6px solid var(--red)}
-#analysis .ana-part{margin-bottom:12px}
+#analysis h2{font-size:18px;text-transform:none;letter-spacing:0;color:var(--ink);margin-bottom:16px}
+#analysis .ana-part{margin-bottom:20px}
 #analysis .ana-part:last-child{margin-bottom:0}
-#analysis .ana-lbl{font-family:'PT Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--ink2);margin-bottom:3px}
-#analysis .ana-txt{font-size:14px;line-height:1.55;color:var(--ink)}
+#analysis .ana-lbl{font-family:'PT Mono',monospace;font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--ink2);margin-bottom:6px}
+#analysis .ana-txt{font-size:17.5px;line-height:1.65;color:var(--ink)}
 #analysis .ana-txt b{font-weight:700}
 .foot{font-size:11px;color:var(--ink2);margin-top:12px;line-height:1.5}
 </style>
@@ -72,8 +75,6 @@ table.exp td.d{text-align:left}
 
 <div id="regime">Загрузка…<div class="row"></div></div>
 
-<div class="panel" id="analysis" style="display:none"></div>
-
 <div class="grid">
   <div class="panel">
     <h2>AUTO-GEX уровни (ближние 45 дн)</h2>
@@ -81,14 +82,12 @@ table.exp td.d{text-align:left}
   </div>
   <div class="panel">
     <h2>Уровни-магниты</h2>
+    <div class="lvlnote">C — сопротивления сверху (call resistance), P — поддержки снизу (put support). Номер — ранг по силе гаммы: 1 — самый сильный магнит.</div>
     <table class="lvltable" id="lvltable"></table>
   </div>
 </div>
 
-<div class="panel">
-  <h2>По экспирациям</h2>
-  <div class="wrap"><table class="exp" id="exptable"></table></div>
-</div>
+<div class="panel" id="analysis" style="display:none"></div>
 
 <div id="log"></div>
 <p class="foot">HVL/flip — граница режимов: выше — зелёная гамма (рынок липнет к магнитам C-уровней, дилеры гасят волатильность), ниже — красная (движения усиливаются). «Без 0DTE» — завтрашняя подушка после экспирации сегодняшних опционов. OI обновляется раз в сутки; внутридневную смену матрицы срез не видит. Инструмент аналитический — в торговую систему (лестницу, выходы) не встраивается.</p>
@@ -134,8 +133,10 @@ function parseOCC(sym) {
 }
 
 function fmtB(x) {
-  return Math.abs(x) >= 1e9 ? (x / 1e9 >= 0 ? "+" : "") + (x / 1e9).toFixed(2) + "B"
-                            : (x / 1e6 >= 0 ? "+" : "") + (x / 1e6).toFixed(1) + "M";
+  const s = x >= 0 ? "+" : "−";
+  const a = Math.abs(x);
+  return a >= 1e9 ? s + "$" + (a / 1e9).toFixed(2) + "B"
+                  : s + "$" + (a / 1e6).toFixed(1) + "M";
 }
 
 // data: {current_price, options:[{option, iv, open_interest}]}
@@ -337,13 +338,13 @@ function nearestBelow(levels, spot){
 }
 function analysisHTML(sym, R){
   const green = R.regime === "green";
-  const flip = R.flip != null ? R.flip.toFixed(0) : "—";
+  const flip = R.flip != null ? "$" + R.flip.toFixed(0) : "—";
   const em0 = R.byExpiry.length ? R.byExpiry[0].expMove : null;
-  const emTxt = em0 != null ? ("±" + em0.toFixed(0)) : "—";
+  const emTxt = em0 != null ? ("±$" + em0.toFixed(0)) : "—";
   const cUp = nearestAbove(R.callLevels, R.spot);
   const pDn = nearestBelow(R.putLevels, R.spot);
-  const cTxt = cUp ? cUp.strike.toFixed(0) : "—";
-  const pTxt = pDn ? pDn.strike.toFixed(0) : "—";
+  const cTxt = cUp ? "$" + cUp.strike.toFixed(0) : "—";
+  const pTxt = pDn ? "$" + pDn.strike.toFixed(0) : "—";
 
   const cushion = (R.netEx0 < 0 && R.netGex > 0)
     ? " <b>Важно:</b> вся текущая зелёная гамма держится на сегодняшней 0DTE — после её экспирации подушка уходит, к завтрашнему дню режим может стать красным."
@@ -360,7 +361,7 @@ function analysisHTML(sym, R){
     tactic = "Импульсы склонны продолжаться, пробои ускоряются — осторожнее с покупкой отскоков и ловлей ножей; уход под поддержку <b>" + pTxt + "</b> может доускоряться. Ключевой сигнал разворота режима — возврат <b>выше флипа " + flip + "</b>: тогда дилеры снова начнут гасить волатильность.";
   }
 
-  return "<h2>Что показывает картина · " + sym + " " + R.spot.toFixed(2) + "</h2>" +
+  return "<h2>Что показывает картина · " + sym + " $" + R.spot.toFixed(2) + "</h2>" +
     "<div class='ana-part'><div class='ana-lbl'>Что это значит</div><div class='ana-txt'>" + mean + "</div></div>" +
     "<div class='ana-part'><div class='ana-lbl'>Прогноз на сегодня · дневной GEX</div><div class='ana-txt'>" + forecast + "</div></div>" +
     "<div class='ana-part'><div class='ana-lbl'>Тактика</div><div class='ana-txt'>" + tactic + "</div></div>" +
@@ -374,12 +375,12 @@ function render(sym, R, log) {
                                       : "КРАСНАЯ гамма — дилеры раскачивают движение";
   const fragThin = /тонкий лёд|НА ФЛИПЕ/.test(R.fragility);
   reg.innerHTML =
-    "<b>" + sym + " " + R.spot.toFixed(2) + "</b> &nbsp; " + regTxt +
+    "<b>" + sym + " $" + R.spot.toFixed(2) + "</b> &nbsp; " + regTxt +
     "<div class='row'>" +
     "<span>NET GEX: <b>" + fmtB(R.netGex) + "</b></span>" +
     "<span>без 0DTE: <b>" + fmtB(R.netEx0) + "</b>" +
-      (R.flipEx0 ? " (flip " + R.flipEx0.toFixed(0) + ")" : "") + "</span>" +
-    "<span>HVL/flip: <b>" + (R.flip ? R.flip.toFixed(1) : "—") + "</b></span>" +
+      (R.flipEx0 ? " (flip $" + R.flipEx0.toFixed(0) + ")" : "") + "</span>" +
+    "<span>HVL/flip: <b>" + (R.flip ? "$" + R.flip.toFixed(1) : "—") + "</b></span>" +
     "<span class='" + (fragThin ? "frag-thin" : "") + "'>" + R.fragility + "</span>" +
     "</div>";
 
@@ -392,18 +393,18 @@ function render(sym, R, log) {
   const maxg = Math.max(
     ...R.callLevels.map(l => Math.abs(l.gex)),
     ...R.putLevels.map(l => Math.abs(l.gex)), 1);
-  let h = "<tr class='grp'><td colspan='4'>Сопротивления · магниты-потолки сверху</td></tr>";
+  let h = "<tr class='grp'><td colspan='4'>Сопротивления</td></tr>";
   R.callLevels.forEach((l, i) => {
-    h += "<tr><td class='c'>C" + (i+1) + "</td><td class='k c'>" + l.strike.toFixed(0) +
+    h += "<tr><td class='c'>C" + (i+1) + "</td><td class='k c'>$" + l.strike.toFixed(0) +
          "</td><td class='bar'><i style='width:" + (Math.abs(l.gex)/maxg*100) +
          "%;background:var(--grn)'></i></td><td class='k'>" + fmtB(l.gex) + "</td></tr>";
   });
-  h += "<tr class='grp'><td colspan='4'>Флип · граница режима (HVL)</td></tr>";
-  h += "<tr><td class='c' style='color:var(--cyn)'>HVL</td><td class='k' style='color:var(--cyn)'>" +
+  h += "<tr class='grp'><td colspan='4'>Флип — граница режима</td></tr>";
+  h += "<tr><td class='c' style='color:var(--cyn)'>HVL</td><td class='k' style='color:var(--cyn)'>$" +
        (R.flip ? R.flip.toFixed(0) : "—") + "</td><td colspan='2' style='color:var(--ink2);font-size:12px'>выше — гасят волатильность, ниже — раскачивают</td></tr>";
-  h += "<tr class='grp'><td colspan='4'>Поддержки · полы-подушки снизу</td></tr>";
+  h += "<tr class='grp'><td colspan='4'>Поддержки</td></tr>";
   R.putLevels.forEach((l, i) => {
-    h += "<tr><td class='p'>P" + (i+1) + "</td><td class='k p'>" + l.strike.toFixed(0) +
+    h += "<tr><td class='p'>P" + (i+1) + "</td><td class='k p'>$" + l.strike.toFixed(0) +
          "</td><td class='bar'><i style='width:" + (Math.abs(l.gex)/maxg*100) +
          "%;background:var(--red)'></i></td><td class='k'>" + fmtB(l.gex) + "</td></tr>";
   });
@@ -411,21 +412,6 @@ function render(sym, R, log) {
 
   // ---- SVG levels chart (light, Tanuki-style) ----
   drawLevels(sym, R, maxg);
-
-  // ---- expiry table ----
-  let e = "<tr><th class='d'>экспирация</th><th>DTE</th><th>GEX</th><th>%</th>" +
-          "<th>DEX</th><th>OI</th><th>call res</th><th>put sup</th><th>±move</th></tr>";
-  for (const r of R.byExpiry) {
-    e += "<tr><td class='d'>" + r.expiry + "</td><td>" + r.dte + "</td>" +
-         "<td class='" + (r.gex>=0?"pos":"neg") + "'>" + fmtB(r.gex) + "</td>" +
-         "<td>" + r.gexPct.toFixed(1) + "</td>" +
-         "<td class='" + (r.dex>=0?"pos":"neg") + "'>" + fmtB(r.dex) + "</td>" +
-         "<td>" + r.oi.toLocaleString() + "</td>" +
-         "<td>" + (r.callRes?r.callRes.toFixed(0):"—") + "</td>" +
-         "<td>" + (r.putSup?r.putSup.toFixed(0):"—") + "</td>" +
-         "<td>" + r.expMove.toFixed(0) + "</td></tr>";
-  }
-  document.getElementById("exptable").innerHTML = e;
 }
 
 let priceCache = {};
@@ -465,26 +451,40 @@ async function drawLevels(sym, R, maxg) {
     s += "<path d='"+d+"' fill='none' stroke='#17242E' stroke-width='1.8' clip-path='url(#plot)'/>";
   }
   const xR = W - padR;
-  function lvlLine(val, gex, color, label) {
-    const yy = y(val), w = Math.abs(gex)/maxg;
-    const strong = Math.abs(gex) === maxg;
-    s += "<line x1='"+padL+"' x2='"+xR+"' y1='"+yy.toFixed(1)+"' y2='"+yy.toFixed(1)+"' stroke='"+color+
-         "' stroke-width='"+(strong?2.2:1.4)+"' opacity='"+(strong?0.95:0.6)+"'/>";
-    s += "<rect x='"+(xR+6)+"' y='"+(yy-6).toFixed(1)+"' width='"+(w*120).toFixed(1)+"' height='12' fill='"+color+"' opacity='0.85' rx='2'/>";
-    s += "<text x='"+(xR+6+w*120+6).toFixed(1)+"' y='"+(yy+4).toFixed(1)+"' font-size='13' font-weight='bold' fill='"+color+
-         "' font-family='PT Mono'>"+label+" "+val.toFixed(0)+"</text>";
+  // горизонтальные линии уровней — на истинной цене
+  const hline = (val,color,sw,op)=>{ const yy=y(val).toFixed(1);
+    s += "<line x1='"+padL+"' x2='"+xR+"' y1='"+yy+"' y2='"+yy+"' stroke='"+color+"' stroke-width='"+sw+"' opacity='"+op+"'/>"; };
+  R.callLevels.forEach(l=>{const st=Math.abs(l.gex)===maxg; hline(l.strike,"#0E9F5B",st?2.2:1.4,st?0.95:0.6);});
+  R.putLevels.forEach(l=>{const st=Math.abs(l.gex)===maxg; hline(l.strike,"#D63B2F",st?2.2:1.4,st?0.95:0.6);});
+  if (R.flip) hline(R.flip,"#0794A8",2.4,1);
+
+  // правые подписи с раз-наложением (когда страйки близко по цене)
+  const labels = [];
+  R.callLevels.forEach((l,i)=>labels.push({yTrue:y(l.strike),color:"#0E9F5B",text:"C"+(i+1)+" $"+l.strike.toFixed(0),bar:Math.abs(l.gex)/maxg}));
+  R.putLevels.forEach((l,i)=>labels.push({yTrue:y(l.strike),color:"#D63B2F",text:"P"+(i+1)+" $"+l.strike.toFixed(0),bar:Math.abs(l.gex)/maxg}));
+  if (R.flip) labels.push({yTrue:y(R.flip),color:"#0794A8",text:"HVL $"+R.flip.toFixed(0),bar:0});
+  labels.sort((a,b)=>a.yTrue-b.yTrue);
+  labels.forEach(l=>l.yLab=l.yTrue);
+  const GAP=20;
+  for (let i=1;i<labels.length;i++)
+    if (labels[i].yLab - labels[i-1].yLab < GAP) labels[i].yLab = labels[i-1].yLab + GAP;
+  if (labels.length){
+    const over = labels[labels.length-1].yLab - (H - 6);
+    if (over > 0) labels.forEach(l=>l.yLab -= over);
   }
-  R.callLevels.forEach((l,i)=>lvlLine(l.strike,l.gex,"#0E9F5B","C"+(i+1)));
-  R.putLevels.forEach((l,i)=>lvlLine(l.strike,l.gex,"#D63B2F","P"+(i+1)));
-  if (R.flip) {
-    const yy=y(R.flip);
-    s += "<line x1='"+padL+"' x2='"+xR+"' y1='"+yy.toFixed(1)+"' y2='"+yy.toFixed(1)+"' stroke='#0794A8' stroke-width='2.4'/>";
-    s += "<text x='"+(xR+6)+"' y='"+(yy-7).toFixed(1)+"' font-size='13' font-weight='bold' fill='#0794A8' font-family='PT Mono'>HVL "+R.flip.toFixed(0)+"</text>";
-  }
-  // spot
+  labels.forEach(l=>{
+    if (Math.abs(l.yLab - l.yTrue) > 1.5)
+      s += "<path d='M"+xR+","+l.yTrue.toFixed(1)+" L"+(xR+6)+","+l.yLab.toFixed(1)+"' stroke='"+l.color+"' stroke-width='0.8' fill='none' opacity='0.5'/>";
+    if (l.bar > 0)
+      s += "<rect x='"+(xR+6)+"' y='"+(l.yLab-6).toFixed(1)+"' width='"+(l.bar*120).toFixed(1)+"' height='12' fill='"+l.color+"' opacity='0.85' rx='2'/>";
+    const tx = xR + 6 + (l.bar>0 ? l.bar*120 + 6 : 4);
+    s += "<text x='"+tx.toFixed(1)+"' y='"+(l.yLab+4).toFixed(1)+"' font-size='13' font-weight='bold' fill='"+l.color+"' font-family='PT Mono'>"+l.text+"</text>";
+  });
+
+  // spot — слева
   const ys=y(R.spot);
   s += "<line x1='"+padL+"' x2='"+xR+"' y1='"+ys.toFixed(1)+"' y2='"+ys.toFixed(1)+"' stroke='#17242E' stroke-width='1' stroke-dasharray='4 3' opacity='0.6'/>";
-  s += "<text x='"+padL+"' y='"+(ys-5).toFixed(1)+"' font-size='13' fill='#17242E' font-family='PT Mono'>spot "+R.spot.toFixed(1)+"</text>";
+  s += "<text x='"+padL+"' y='"+(ys-5).toFixed(1)+"' font-size='13' fill='#17242E' font-family='PT Mono'>spot $"+R.spot.toFixed(1)+"</text>";
   svg.innerHTML = s;
 }
 

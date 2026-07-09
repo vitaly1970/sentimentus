@@ -15,9 +15,15 @@ header{display:flex;justify-content:space-between;align-items:center;border-bott
 h1{font-size:20px;font-weight:700}
 h1 small{font-weight:400;color:var(--ink2);font-size:12px;margin-left:8px}
 .controls{display:flex;gap:8px;align-items:center}
-select,button{font-family:inherit;font-size:14px;padding:6px 12px;border:1px solid var(--ink);background:var(--panel);color:var(--ink);border-radius:4px;cursor:pointer}
-button{background:var(--ink);color:#fff;font-weight:700;border:none}
-button:hover{background:#2A3B49}
+.controls input,.controls button{height:38px;box-sizing:border-box;font-family:inherit;font-size:14px;border-radius:6px}
+.controls input{border:1px solid var(--line);padding:0 12px;background:var(--panel);color:var(--ink);width:150px;text-transform:uppercase}
+.controls input:focus{outline:none;border-color:var(--ink);box-shadow:0 0 0 3px rgba(23,36,46,.08)}
+.controls button{background:var(--ink);color:#fff;font-weight:700;border:none;padding:0 18px;cursor:pointer}
+.controls button:hover{background:#2A3B49}
+.symwrap{position:relative}
+.symerr{position:absolute;top:calc(100% + 8px);left:0;background:var(--red);color:#fff;font-size:12.5px;line-height:1.4;padding:7px 11px;border-radius:6px;white-space:nowrap;display:none;z-index:5;box-shadow:0 4px 10px rgba(0,0,0,.15)}
+.symerr::before{content:'';position:absolute;top:-4px;left:16px;width:8px;height:8px;background:var(--red);transform:rotate(45deg)}
+.symerr.show{display:block}
 #regime{padding:14px 18px;border-radius:8px;margin-bottom:16px;border:1px solid var(--line);background:var(--panel);font-size:15px}
 #regime.green{border-left:6px solid var(--grn);background:#EAF7F0}
 #regime.red{border-left:6px solid var(--red);background:#FBEBEA}
@@ -30,6 +36,7 @@ button:hover{background:#2A3B49}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px}
 .panel h2{font-size:11px;text-transform:uppercase;letter-spacing:1.2px;color:var(--ink2);margin-bottom:10px;font-weight:700}
 #levels{width:100%;height:auto}
+.chartcap{font-size:11.5px;line-height:1.4;color:var(--ink2);margin:-4px 0 10px}
 .lvltable{width:100%;font-size:13px;border-collapse:collapse}
 .lvltable td{padding:5px 8px;border-bottom:1px solid var(--line)}
 .lvltable .k{font-family:'PT Mono',monospace;font-weight:700;text-align:right}
@@ -64,8 +71,10 @@ table.exp td.d{text-align:left}
 <header>
   <h1>GEX — дилерская гамма<small>сборка gex-2 · CBOE delayed 15m · допущение: дилеры лонг-колл/шорт-пут</small></h1>
   <div class="controls">
-    <input id="sym" list="symlist" value="QQQ" maxlength="6" autocomplete="off"
-           placeholder="Тикер, напр. AAPL" style="text-transform:uppercase;width:160px">
+    <div class="symwrap">
+      <input id="sym" list="symlist" value="QQQ" maxlength="6" autocomplete="off" placeholder="Тикер, напр. AAPL">
+      <div class="symerr" id="symerr"></div>
+    </div>
     <datalist id="symlist">
       <option value="QQQ">QQQ (под TQQQ)</option>
       <option value="SPY">SPY</option>
@@ -87,6 +96,7 @@ table.exp td.d{text-align:left}
 <div class="grid">
   <div class="panel">
     <h2>AUTO-GEX уровни (ближние 45 дн)</h2>
+    <div class="chartcap" id="chartcap"></div>
     <svg id="levels" viewBox="0 0 760 560" preserveAspectRatio="xMidYMid meet" role="img"></svg>
   </div>
   <div class="panel">
@@ -295,14 +305,17 @@ async function fetchJson(url, log) {
 
 async function run() {
   const symEl = document.getElementById("sym");
+  const errEl = document.getElementById("symerr");
   const sym = symEl.value.trim().toUpperCase().replace(/[^A-Z]/g, "");
   symEl.value = sym;
-  const reg = document.getElementById("regime");
   if (!/^[A-Z]{1,6}$/.test(sym)) {
-    reg.className = "red";
-    reg.innerHTML = "Введите тикер латиницей (1–6 букв), например QQQ или AAPL.";
+    errEl.textContent = "Введите тикер латиницей (1–6 букв), например QQQ или AAPL.";
+    errEl.classList.add("show");
+    symEl.focus();
     return;
   }
+  errEl.classList.remove("show");
+  const reg = document.getElementById("regime");
   const logEl = document.getElementById("log"); logEl.textContent = "";
   const log = m => { logEl.textContent += m + "\n"; };
   reg.className = ""; reg.innerHTML = "Загрузка цепочки " + sym + "…<div class='row'></div>";
@@ -456,6 +469,15 @@ async function drawLevels(sym, R, maxg) {
   }
   const recent = px.slice(-35);
 
+  const capEl = document.getElementById("chartcap");
+  if (capEl) {
+    const fmtD = t => new Date(t).toLocaleDateString("ru-RU", {day:"2-digit", month:"2-digit"});
+    capEl.textContent = recent.length > 1
+      ? "Фиолетовая линия — история цены закрытия (" + fmtD(recent[0].t) + "–" + fmtD(recent[recent.length-1].t) +
+        ", по сегодня, это прошлое, не прогноз). Горизонтальные уровни — прогноз дилерских магнитов на сегодняшний день."
+      : "Горизонтальные уровни — прогноз дилерских магнитов на сегодняшний день.";
+  }
+
   const y = v => padT + (H - padT - padB) * (1 - (v - lo) / (hi - lo));
   const x = i => padL + (W - padL - padR) * i / Math.max(recent.length - 1, 1);
 
@@ -465,7 +487,7 @@ async function drawLevels(sym, R, maxg) {
   if (recent.length > 1) {
     let d = "M" + x(0).toFixed(1) + "," + y(recent[0].v).toFixed(1);
     for (let i=1;i<recent.length;i++) d += " L" + x(i).toFixed(1) + "," + y(recent[i].v).toFixed(1);
-    s += "<path d='"+d+"' fill='none' stroke='#17242E' stroke-width='1.8' clip-path='url(#plot)'/>";
+    s += "<path d='"+d+"' fill='none' stroke='#9400D3' stroke-width='1.8' clip-path='url(#plot)'/>";
   }
   const xR = W - padR;
   // горизонтальные линии уровней — на истинной цене
@@ -507,6 +529,7 @@ async function drawLevels(sym, R, maxg) {
 
 document.getElementById("run").addEventListener("click", run);
 document.getElementById("sym").addEventListener("keydown", e => { if (e.key === "Enter") run(); });
+document.getElementById("sym").addEventListener("input", () => document.getElementById("symerr").classList.remove("show"));
 run();
 </script>
 </body>

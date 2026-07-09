@@ -6,6 +6,7 @@ const ALLOWED = new Set([
   "query2.finance.yahoo.com",
   "naaim.org",
   "www.naaim.org",
+  "fred.stlouisfed.org",
 ]);
 
 exports.handler = async (event) => {

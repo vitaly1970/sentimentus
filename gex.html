@@ -64,11 +64,20 @@ table.exp td.d{text-align:left}
 <header>
   <h1>GEX — дилерская гамма<small>сборка gex-2 · CBOE delayed 15m · допущение: дилеры лонг-колл/шорт-пут</small></h1>
   <div class="controls">
-    <select id="sym">
+    <input id="sym" list="symlist" value="QQQ" maxlength="6" autocomplete="off"
+           placeholder="Тикер, напр. AAPL" style="text-transform:uppercase;width:160px">
+    <datalist id="symlist">
       <option value="QQQ">QQQ (под TQQQ)</option>
-      <option value="SPX">SPX (весь рынок)</option>
       <option value="SPY">SPY</option>
-    </select>
+      <option value="SPX">SPX (весь рынок, индекс)</option>
+      <option value="AAPL">AAPL</option>
+      <option value="TSLA">TSLA</option>
+      <option value="NVDA">NVDA</option>
+      <option value="MSFT">MSFT</option>
+      <option value="AMZN">AMZN</option>
+      <option value="META">META</option>
+      <option value="GOOGL">GOOGL</option>
+    </datalist>
     <button id="run">Рассчитать</button>
   </div>
 </header>
@@ -285,10 +294,17 @@ async function fetchJson(url, log) {
 }
 
 async function run() {
-  const sym = document.getElementById("sym").value;
+  const symEl = document.getElementById("sym");
+  const sym = symEl.value.trim().toUpperCase().replace(/[^A-Z]/g, "");
+  symEl.value = sym;
+  const reg = document.getElementById("regime");
+  if (!/^[A-Z]{1,6}$/.test(sym)) {
+    reg.className = "red";
+    reg.innerHTML = "Введите тикер латиницей (1–6 букв), например QQQ или AAPL.";
+    return;
+  }
   const logEl = document.getElementById("log"); logEl.textContent = "";
   const log = m => { logEl.textContent += m + "\n"; };
-  const reg = document.getElementById("regime");
   reg.className = ""; reg.innerHTML = "Загрузка цепочки " + sym + "…<div class='row'></div>";
   document.getElementById("run").disabled = true;
 
@@ -429,7 +445,8 @@ async function drawLevels(sym, R, maxg) {
   let px = priceCache[sym];
   if (!px) {
     try {
-      const ysym = sym === "SPX" ? "%5EGSPC" : sym;
+      const yahooIdx = {SPX:"%5EGSPC", NDX:"%5ENDX", RUT:"%5ERUT", VIX:"%5EVIX", DJX:"%5EDJI"};
+      const ysym = yahooIdx[sym] || sym;
       const raw = await fetchJson("https://query1.finance.yahoo.com/v8/finance/chart/" +
                     ysym + "?range=3mo&interval=1d", ()=>{});
       const r = raw.chart.result[0], ts = r.timestamp, c = r.indicators.quote[0].close;
@@ -489,6 +506,7 @@ async function drawLevels(sym, R, maxg) {
 }
 
 document.getElementById("run").addEventListener("click", run);
+document.getElementById("sym").addEventListener("keydown", e => { if (e.key === "Enter") run(); });
 run();
 </script>
 </body>

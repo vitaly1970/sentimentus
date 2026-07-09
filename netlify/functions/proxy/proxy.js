@@ -1,11 +1,12 @@
-// Классический формат Netlify Functions (v1) — гарантированно работает
-// при ручном drag-and-drop деплое. Путь: /.netlify/functions/proxy?url=...
+// Классический формат Netlify Functions (v1).
+// Путь: /.netlify/functions/proxy?url=...
 //
-// Особый случай: fred.stlouisfed.org/graph/fredgraph.csv?id=XXX перехватывается
-// и подменяется на вызов официального FRED API (api.stlouisfed.org) с ключом.
+// FRED: перехватывается и идёт через официальный API (api.stlouisfed.org) с ключом.
+// AAII: получает полноценные браузерные заголовки (UA/Accept-Language/Referer) —
+//   AAII отдаёт 403 на запросы с минимальными заголовками (см. лог: passthrough
+//   status = 403 при "User-Agent: Mozilla/5.0" без остального).
 //
-// В этой версии добавлены console.log на каждом шаге — временно, для отладки
-// через Netlify → Logs & metrics → Functions → proxy. Можно убрать позже.
+// console.log оставлены для диагностики через Netlify → Logs & metrics → Functions → proxy.
 
 const ALLOWED = new Set([
   "cdn.cboe.com",
@@ -19,6 +20,22 @@ const ALLOWED = new Set([
 ]);
 
 const FRED_API_KEY = process.env.FRED_API_KEY;
+
+const BROWSER_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+                    "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
+
+function headersFor(u) {
+  const base = {
+    "User-Agent": BROWSER_UA,
+    "Accept": "*/*",
+    "Accept-Language": "en-US,en;q=0.9",
+  };
+  if (u.hostname.includes("aaii.com")) {
+    base["Accept"] = "application/vnd.ms-excel,application/octet-stream,*/*";
+    base["Referer"] = "https://www.aaii.com/sentimentsurvey";
+  }
+  return base;
+}
 
 async function fetchFredViaApi(seriesId) {
   const apiUrl = "https://api.stlouisfed.org/fred/series/observations" +
@@ -39,13 +56,12 @@ exports.handler = async (event) => {
 
   let u;
   try { u = new URL(target); } catch (e) {
-    console.log("[proxy] bad url, parse error:", e.message);
+    console.log("[proxy] bad url:", e.message);
     return { statusCode: 400, body: "bad url" };
   }
 
-  console.log("[proxy] hostname =", u.hostname, "| allowed =", ALLOWED.has(u.hostname));
   if (u.protocol !== "https:" || !ALLOWED.has(u.hostname)) {
-    console.log("[proxy] REJECTED — protocol or host not allowed");
+    console.log("[proxy] REJECTED host:", u.hostname);
     return { statusCode: 403, body: "forbidden host" };
   }
 
@@ -55,7 +71,7 @@ exports.handler = async (event) => {
     if (seriesId && FRED_API_KEY) {
       try {
         const csv = await fetchFredViaApi(seriesId);
-        console.log("[proxy] FRED ok, csv length =", csv.length);
+        console.log("[proxy] FRED ok, len =", csv.length);
         return {
           statusCode: 200,
           headers: {
@@ -71,21 +87,16 @@ exports.handler = async (event) => {
         return { statusCode: 502, body: "fred api error: " + e.message };
       }
     }
-    if (!FRED_API_KEY) {
-      console.log("[proxy] FRED_API_KEY missing in env");
-      return { statusCode: 500, body: "FRED_API_KEY не задан в Netlify env vars" };
-    }
+    if (!FRED_API_KEY) return { statusCode: 500, body: "FRED_API_KEY не задан" };
   }
 
-  console.log("[proxy] passthrough fetch ->", u.toString());
+  const reqHeaders = headersFor(u);
+  console.log("[proxy] passthrough ->", u.toString(), "| headers:", JSON.stringify(reqHeaders));
   try {
-    const r = await fetch(u.toString(), {
-      headers: { "User-Agent": "Mozilla/5.0", "Accept": "*/*" },
-      redirect: "follow",
-    });
-    console.log("[proxy] passthrough status =", r.status, "| content-type =", r.headers.get("content-type"));
+    const r = await fetch(u.toString(), { headers: reqHeaders, redirect: "follow" });
+    console.log("[proxy] status =", r.status, "| content-type =", r.headers.get("content-type"));
     const buf = Buffer.from(await r.arrayBuffer());
-    console.log("[proxy] passthrough bytes =", buf.length);
+    console.log("[proxy] bytes =", buf.length);
     return {
       statusCode: r.status,
       headers: {
@@ -97,7 +108,7 @@ exports.handler = async (event) => {
       isBase64Encoded: true,
     };
   } catch (e) {
-    console.log("[proxy] passthrough EXCEPTION:", e.name, e.message);
+    console.log("[proxy] EXCEPTION:", e.name, e.message);
     return { statusCode: 502, body: "proxy error: " + e.message };
   }
 };

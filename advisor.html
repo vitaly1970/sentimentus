@@ -135,7 +135,8 @@ const MULT={yellow:0.947,exit:0.888,t1:0.794,t2:0.705,t3:0.585,bear:0.80};
 const DD={yellow:-5.3,exit:-11.2,t1:-20.6,t2:-29.5,t3:-41.5,bear:-20.0};
 
 /* параметры модуля аллокации (порт из бэктеста v2.2) */
-const MOD={ENTER:0.009,EXIT:0.004,CIN:5,COUT:3,DOX:0.20,DREL:0.18,YEL:-0.053,RED:-0.112,SW:10};
+const MOD={ENTER:0.009,EXIT:0.004,CIN:5,COUT:3,DOX:0.20,DREL:0.18,DRET:0.12,CRET:3,YEL:-0.053,RED:-0.112,SW:10};
+const W20='TQQQ 20% / QDTE 80%';      // разгрузка (растяжение)
 const W40='TQQQ 40% / QDTE 60%';      // база
 const W60='TQQQ 60% / QDTE 40%';      // разгон
 
@@ -212,13 +213,16 @@ function weeklyCloses(rows){const wk=[];let cur=null,last=null;
     if(key!==cur){if(last)wk.push(last);cur=key;}last={key,c:r.c,d:r.d};}
   if(last)wk.push(last);return wk;}
 
-/* ---- МАШИНА СОСТОЯНИЙ МОДУЛЯ (порт run_module из бэктеста) ----
-   Прогон по дневным закрытиям QQQ. Возвращает состояние последнего бара:
-   state (BASE/RISKON/CORE_OFF), счётчики ci/co, pending, наклон, D, флаг растяжения,
-   и был ли предыдущий бар в разгоне (для ярлыка «разгон погашен»). */
+/* ---- МАШИНА СОСТОЯНИЙ МОДУЛЯ (порт run_module из бэктеста + разгрузка v2.2) ----
+   Прогон по дневным закрытиям QQQ. Три аллокационных состояния:
+     RISKOFF = 20/80 (растяжение), BASE = 40/60 (по умолчанию), RISKON = 60/40 (тренд).
+   Переходы: D≥20% → RISKOFF немедленно (из любого состояния); RISKOFF→BASE при D<12%
+   три закрытия подряд; латч растяжения (20/18) блокирует вход в разгон; наклон EMA20
+   двигает BASE↔RISKON (подтверждения 5/3). Красный/жёлтый в приоритете.
+   Вес — чистая функция state: RISKOFF 20, BASE 40, RISKON 60. */
 function runModule(closes,ema20,sma200){
-  const N=closes.length,{ENTER,EXIT,CIN,COUT,DOX,DREL,YEL,RED,SW}=MOD;
-  let state='BASE',ci=0,co=0,pending=null,overext=false,ath=-Infinity,prev='BASE';
+  const N=closes.length,{ENTER,EXIT,CIN,COUT,DOX,DREL,DRET,CRET,YEL,RED,SW}=MOD;
+  let state='BASE',ci=0,co=0,cr=0,pending=null,overext=false,ath=-Infinity,prev='BASE';
   let out=null;
   for(let i=0;i<N;i++){
     ath=Math.max(ath,closes[i]);
@@ -228,24 +232,27 @@ function runModule(closes,ema20,sma200){
     if(!isNaN(D)){if(D>=DOX)overext=true;else if(D<DREL)overext=false;}
     prev=state;
     let ns;
-    if(dd<=RED){ns='CORE_OFF';ci=co=0;pending=null;}
-    else if(dd<=YEL){ns='BASE';ci=co=0;pending=null;}
+    if(dd<=RED){ns='CORE_OFF';ci=co=cr=0;pending=null;}
+    else if(dd<=YEL){ns='BASE';ci=co=cr=0;pending=null;}                 // жёлтый → база
+    else if(!isNaN(D)&&D>=DOX){ns='RISKOFF';ci=co=cr=0;pending=null;}     // растяжение → разгрузка
     else{
       ns=(state==='CORE_OFF')?'BASE':state;
-      if(ns==='BASE'){
+      if(ns==='RISKOFF'){                                                // выход из разгрузки: D<12% ×3
+        if(!isNaN(D)&&D<DRET){cr++;if(cr>=CRET){ns='BASE';cr=0;}}
+        else cr=0;
+      }else if(ns==='BASE'){
         const want=(!isNaN(slope)&&slope>ENTER&&!overext)?'RISKON':null;
         if(want&&want===pending)ci++;
         else if(want){pending=want;ci=1;}
         else{pending=null;ci=0;}
         if(pending&&ci>=CIN){ns=pending;pending=null;ci=0;}
       }else if(ns==='RISKON'){
-        if(overext){ns='BASE';co=0;}
-        else if(!isNaN(slope)&&slope<EXIT){co++;if(co>=COUT){ns='BASE';co=0;}}
+        if(!isNaN(slope)&&slope<EXIT){co++;if(co>=COUT){ns='BASE';co=0;}}
         else co=0;
       }
     }
     state=ns;
-    out={state,ci,co,pending,slope,D,dd,overext,prevRiskon:(prev==='RISKON')};
+    out={state,prev,ci,co,cr,pending,slope,D,dd,overext};
   }
   return out;
 }
@@ -254,44 +261,56 @@ function runModule(closes,ema20,sma200){
    Приоритет: жёлтая зона → опасное отклонение → фаза тренда.
    ddFrac — живая просадка (доля), m — состояние последнего бара. */
 function moduleView(m,ddFrac){
-  const stt=(m.state==='CORE_OFF')?'BASE':m.state;
   const sl=m.slope*100, D=m.D*100;
   const DOT={acc:'var(--acc)',base:'var(--sec)',warn:'var(--warn-dot)',ok:'var(--ok-dot)'};
   const COL={acc:'var(--acc)',base:'var(--sec)',warn:'var(--warn)',ok:'var(--ok)'};
+  const wOf=s=>({RISKOFF:20,BASE:40,RISKON:60,CORE_OFF:40})[s]||40;
+  const rebal=wOf(m.state)!==wOf(m.prev);               // вес изменился на этом баре → прямой ребаланс
   let label,dot,col,dist,ind,act;
 
-  if(ddFrac<=MOD.YEL){                                   // жёлтая зона → база принудительно
+  if(ddFrac<=MOD.YEL){                                   // жёлтая зона → база 40/60
     label='жёлтая зона';dot=DOT.warn;col=COL.warn;dist=W40;
     ind=[`просадка QQQ <b>${pc1(ddFrac*100)}</b> ≤ −5,3% — принудительная база`,`сигнал наклона игнорируется`];
-    act=m.prevRiskon?('ребаланс → '+W40):W40;
-  }else if(m.overext){                                   // опасное отклонение от SMA200
-    label='опасное отклонение от SMA200';dot=DOT.warn;col=COL.warn;dist=W40;
-    if(m.prevRiskon)
-      ind=[`отклонение от SMA200 <b>${pc1(D)}</b> ≥ 20% — разгон погашен без подтверждения`,`снятие при &lt;18%`];
-    else
-      ind=[`наклон EMA20 <b>${pc2(sl)}</b> · вход &gt;+0,9% ✓`,`отклонение от SMA200 <b>${pc1(D)}</b> ≥ 20% — разгон запрещён`,`снятие при &lt;18%`];
-    act=m.prevRiskon?('ребаланс → '+W40):W40;
-  }else if(stt==='RISKON'){
+    act=W40;
+  }else if(m.state==='RISKOFF'){                         // разгрузка 20/80
+    dist=W20;dot=DOT.warn;col=COL.warn;
+    if(m.cr>0){                                          // растяжение спадает → база
+      label='растяжение спадает → база';
+      ind=[`отклонение от SMA200 <b>${pc1(D)}</b> &lt; 12%`,`возврат из разгрузки: <b>${m.cr}</b> из 3`];
+      act=W20+', переход к '+W40+' при 3 дне подтверждения';
+    }else{                                               // разгрузка держится растяжением
+      label='опасное отклонение от SMA200';
+      ind=[`отклонение от SMA200 <b>${pc1(D)}</b> ≥ 20% — разгрузка`,`возврат при D &lt; 12% (3 закрытия)`];
+      act=W20;
+    }
+  }else if(m.state==='RISKON'){
+    dist=W60;dot=DOT.acc;col=COL.acc;
     if(m.co>0){                                          // тренд замедляется → слабый
-      label='тренд замедляется → слабый';dot=DOT.acc;col=COL.acc;dist=W60;
+      label='тренд замедляется → слабый';
       ind=[`наклон EMA20 <b>${pc2(sl)}</b> · выход &lt;+0,4% ✓`,`подтверждение выхода: <b>${m.co}</b> из 3`];
       act=W60+', переход к '+W40+' при 3 дне подтверждения';
     }else{                                               // тренд устойчиво сильный
-      label='тренд устойчиво сильный';dot=DOT.acc;col=COL.acc;dist=W60;
+      label='тренд устойчиво сильный';
       ind=[`наклон EMA20 <b>${pc2(sl)}</b> · держится · выход &lt;+0,4%`,`отклонение от SMA200 <b>${pc1(D)}</b> · лимит 20%`,`жёлтая зона: нет`];
       act=W60;
     }
-  }else{                                                 // BASE
-    if(m.pending==='RISKON'&&m.ci>0){                    // тренд ускоряется → сильный
-      label='тренд ускоряется → сильный';dot=DOT.acc;col=COL.acc;dist=W40;
+  }else{                                                 // BASE 40/60
+    dist=W40;
+    if(m.overext&&!isNaN(m.slope)&&m.slope>MOD.ENTER){   // вход в разгон заблокирован растяжением (D в 18–20%)
+      label='опасное отклонение от SMA200 · вход заблокирован';dot=DOT.warn;col=COL.warn;
+      ind=[`наклон EMA20 <b>${pc2(sl)}</b> · вход &gt;+0,9% ✓`,`отклонение от SMA200 <b>${pc1(D)}</b> — вход в разгон запрещён`,`снятие блока при D &lt; 18%`];
+      act=W40;
+    }else if(m.pending==='RISKON'&&m.ci>0){              // тренд ускоряется → сильный
+      label='тренд ускоряется → сильный';dot=DOT.acc;col=COL.acc;
       ind=[`наклон EMA20 <b>${pc2(sl)}</b> · вход &gt;+0,9% ✓`,`подтверждение входа: <b>${m.ci}</b> из 5`,`отклонение от SMA200 <b>${pc1(D)}</b> · лимит 20%`];
       act=W40+', переход к '+W60+' при 5 дне подтверждения';
     }else{                                               // тренд устойчиво слабый
-      label='тренд устойчиво слабый';dot=DOT.base;col=COL.base;dist=W40;
+      label='тренд устойчиво слабый';dot=DOT.base;col=COL.base;
       ind=[`наклон EMA20 <b>${pc2(sl)}</b> · вход &gt;+0,9% — нет`,`отклонение от SMA200 <b>${pc1(D)}</b> · лимит 20%`,`жёлтая зона: нет`];
       act=W40;
     }
   }
+  if(rebal)act='ребаланс → '+dist;                       // на баре смены веса — прямое указание
   return{label,dot,col,dist,ind,act};
 }
 
@@ -365,7 +384,7 @@ async function runAdvisor(){
 
     /* плашка режима (информационная) */
     $('regime').innerHTML=standard
-      ? `<div class="regime"><div class="t">Стандартный режим · управляет модуль</div><div class="s">слабый тренд — ${W40} · сильный тренд — ${W60}</div></div>`
+      ? `<div class="regime"><div class="t">Стандартный режим · управляет модуль</div><div class="s">растяжение — ${W20} · база — ${W40} · тренд — ${W60}</div></div>`
       : `<div class="regime crisis"><div class="t">Кризис · управляет ядро</div><div class="s">модуль выключен · лестница и ступенчатый выход</div></div>`;
 
     /* ================= TQQQ ================= */

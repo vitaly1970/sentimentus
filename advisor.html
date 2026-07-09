@@ -8,36 +8,56 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 <style>
-.state-row{display:flex;justify-content:flex-end;align-items:center;gap:9px;margin-bottom:16px;flex-wrap:wrap}
+:root{--acc:#2F74C0;--acc-bg:#EDF4FC;--acc-bd:#CBE0F6}
+
+.state-row{display:flex;justify-content:flex-end;align-items:center;gap:9px;margin-bottom:14px;flex-wrap:wrap}
 .state-row .lab{font-size:.85rem;color:var(--muted)}
 .state-row select{font-size:.85rem;font-family:var(--mono);padding:6px 10px;border:1px solid var(--rule2);border-radius:6px;background:#fff;color:var(--ink)}
 
 .warnbar{background:var(--red-bg);border:1px solid var(--red-dot);color:var(--red);border-radius:9px;padding:11px 15px;font-size:.9rem;margin-bottom:15px;display:none}
 .livehint{color:#EF3340;font-size:.8rem;line-height:1.45;margin-top:12px}
 
+/* шапка со сводкой QQQ + мастер-статус */
+.hdrline{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.hnums{font-family:var(--mono);font-size:.85rem;color:var(--sec)}
+.hnums b{color:var(--ink);font-weight:600}
+.hnums .live{color:var(--acc);font-weight:600}
+
+/* информационная плашка режима (не селектор) */
+.regime{border-radius:12px;padding:13px 16px;margin-bottom:16px;background:var(--acc-bg);border:1px solid var(--acc-bd)}
+.regime .t{font-size:.95rem;font-weight:600;color:var(--acc)}
+.regime .s{font-size:.8rem;color:var(--acc);margin-top:3px;font-family:var(--mono)}
+.regime.crisis{background:var(--red-bg);border-color:var(--red-dot)}
+.regime.crisis .t,.regime.crisis .s{color:var(--red)}
+
 .wing{background:var(--surf);border:1px solid var(--rule);border-radius:13px;padding:18px 20px;margin-bottom:14px}
 .wing-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;gap:10px;flex-wrap:wrap}
 .wing-title{font-size:1.15rem;font-weight:600;letter-spacing:.01em}
-.wing-nums{font-family:var(--mono);font-size:.875rem;color:var(--sec)}
+.wing-nums{font-family:var(--mono);font-size:.85rem;color:var(--sec)}
 .wing-nums b{color:var(--ink);font-weight:600}
 .wing-nums .ref{color:var(--muted)}
 
-.wing-grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:22px;align-items:start}
+.wing-grid{display:grid;grid-template-columns:minmax(0,235px) minmax(0,1fr);gap:22px;align-items:start}
 @media(max-width:660px){.wing-grid{grid-template-columns:1fr;gap:16px}}
-.therm{width:100%}
 
-.rows .r{padding:13px 0;border-bottom:1px solid var(--rule)}
-.rows .r:last-child{border-bottom:none}
-.r .lbl{font-size:.875rem;color:var(--sec);text-transform:uppercase;letter-spacing:.05em;font-weight:500;margin-bottom:6px}
-.r.status{display:flex;justify-content:space-between;align-items:center;padding:12px 0}
-.r.status .lbl{margin:0}
-.sig{font-size:1.25rem;font-weight:600;line-height:1.4}
-.sig .soft{font-weight:500;color:var(--sec)}
-.sig .price{font-family:var(--mono)}
-.fore{font-size:1.05rem;line-height:1.5}
-.fore .price{font-family:var(--mono);font-weight:600}
-.fore .ref{color:var(--sec);font-size:.875rem}
-.fore .sub{font-size:.875rem;color:var(--sec);margin-top:5px}
+/* левая колонка — уровни */
+.lvls{font-family:var(--mono);font-size:.8rem}
+.lvls .h{display:grid;grid-template-columns:1fr auto;gap:10px;padding:0 0 5px;color:var(--muted);font-size:.72rem}
+.lvls .h.q{grid-template-columns:1fr auto auto;gap:12px}
+.lvls .l{display:grid;grid-template-columns:1fr auto;gap:10px;padding:6px 0;border-top:1px solid var(--rule)}
+.lvls .l.q{grid-template-columns:1fr auto auto;gap:12px}
+.lvls .paren{color:var(--muted)}
+.c-cur{color:var(--acc)} .c-y{color:var(--warn)} .c-r{color:var(--red)} .c-b{color:var(--bear)} .c-ok{color:var(--ok)} .c-m{color:var(--sec)}
+
+/* правая колонка — карточка состояния */
+.scard{background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:13px 15px}
+.scard .st{display:flex;align-items:flex-start;gap:8px;margin-bottom:10px}
+.scard .st .dot{width:9px;height:9px;border-radius:50%;margin-top:6px;flex:0 0 auto}
+.scard .st .lb{font-size:.95rem;font-weight:600;line-height:1.4}
+.scard .ind{font-family:var(--mono);font-size:.8rem;line-height:1.85;color:var(--sec)}
+.scard .ind b{color:var(--ink);font-weight:600}
+.scard .act{margin-top:11px;padding-top:10px;border-top:1px solid var(--rule);font-size:.85rem;color:var(--ink)}
+.scard .act b{font-weight:600}
 
 .badge{display:inline-flex;align-items:center;gap:7px;font-size:.94rem;padding:5px 15px;border-radius:7px;font-weight:600}
 .badge .dot{width:9px;height:9px;border-radius:50%}
@@ -45,7 +65,6 @@
 .b-warn{background:var(--warn-dot);color:#3d2402} .b-warn .dot{background:#7E4A0A}
 .b-red{background:var(--red-dot);color:#fff} .b-red .dot{background:#fff}
 .b-bear{background:var(--bear-dot);color:#fff} .b-bear .dot{background:#fff}
-/* мягкие бейджи для здоровья */
 .bs-ok{background:var(--ok-bg);color:var(--ok)} .bs-ok .dot{background:var(--ok-dot)}
 .bs-warn{background:var(--warn-bg);color:var(--warn)} .bs-warn .dot{background:var(--warn-dot)}
 .bs-red{background:var(--red-bg);color:var(--red)} .bs-red .dot{background:var(--red-dot)}
@@ -67,19 +86,20 @@
     <span class="meta" id="meta">данные не загружены</span>
   </div>
 
+  <!-- Журнальные факты (то, что не восстановить из цен). В стандартном режиме скрыты. -->
   <div class="state-row">
-    <span class="lab">состояние:</span>
-    <select id="state" title="Состояние TQQQ">
-      <option value="POS">TQQQ: в позиции 100%</option>
-      <option value="CASH">TQQQ: в SGOV (вышли)</option>
+    <span class="lab">фаза:</span>
+    <select id="state" title="Фаза стратегии">
+      <option value="POS">Стандартный режим (в позиции)</option>
+      <option value="CASH">Кризис — отрабатывает ядро</option>
     </select>
-    <select id="lastlvl" title="Последний уровень TQQQ" style="display:none">
+    <select id="lastlvl" title="Последний уровень лестницы TQQQ" style="display:none">
       <option value="exit">после выхода (−11,2%)</option>
       <option value="t1">транш 1 сработал (−20,6%)</option>
       <option value="t2">транш 2 сработал (−29,5%)</option>
       <option value="t3">транш 3 сработал (−41,5%)</option>
     </select>
-    <select id="qstate" title="Состояние QDTE">
+    <select id="qstate" title="Состояние QDTE" style="display:none">
       <option value="FULL">QDTE: 100%</option>
       <option value="HALF">QDTE: 50% в SGOV</option>
       <option value="OUT">QDTE: 100% в SGOV</option>
@@ -89,22 +109,35 @@
   <div class="warnbar" id="warnbar"></div>
 
   <div id="out" style="display:none">
+    <div class="hdrline"><span class="hnums" id="hdr"></span><span id="hdr-badge"></span></div>
+    <div id="regime"></div>
+
     <div class="wing">
       <div class="wing-head"><span class="wing-title">TQQQ</span><span class="wing-nums" id="tq-nums"></span></div>
-      <div class="wing-grid"><div class="therm" id="tq-therm"></div><div class="rows" id="tq-rows"></div></div>
+      <div class="wing-grid"><div id="tq-left"></div><div id="tq-right"></div></div>
+      <div class="livehint" id="tq-hint" style="display:none"></div>
     </div>
+
     <div class="wing">
       <div class="wing-head"><span class="wing-title">QDTE</span><span class="wing-nums" id="qd-nums"></span></div>
-      <div class="wing-grid"><div class="therm" id="qd-therm"></div><div class="rows" id="qd-rows"></div></div>
+      <div class="wing-grid"><div id="qd-left"></div><div id="qd-right"></div></div>
       <div class="health" id="qd-health"></div>
     </div>
   </div>
+</div>
 
 <script>
 'use strict';
 const $=id=>document.getElementById(id);
+
+/* уровни просадки: множитель к ATH и подпись в % */
 const MULT={yellow:0.947,exit:0.888,t1:0.794,t2:0.705,t3:0.585,bear:0.80};
 const DD={yellow:-5.3,exit:-11.2,t1:-20.6,t2:-29.5,t3:-41.5,bear:-20.0};
+
+/* параметры модуля аллокации (порт из бэктеста v2.2) */
+const MOD={ENTER:0.009,EXIT:0.004,CIN:5,COUT:3,DOX:0.20,DREL:0.18,YEL:-0.053,RED:-0.112,SW:10};
+const W40='TQQQ 40% / QDTE 60%';      // база
+const W60='TQQQ 60% / QDTE 40%';      // разгон
 
 /* ---- состояние в браузере ---- */
 const mem={},store={
@@ -114,9 +147,15 @@ const mem={},store={
 };
 ['state','lastlvl','qstate'].forEach(id=>{const s=store.read('adv_'+id);if(s!==null)$(id).value=s;
   $(id).addEventListener('change',()=>{store.write('adv_'+id,$(id).value);sync();if(window.__loaded)runAdvisor();});});
-function sync(){$('lastlvl').style.display=$('state').value==='CASH'?'':'none';}
+function sync(){const crisis=$('state').value==='CASH';
+  $('lastlvl').style.display=crisis?'':'none';$('qstate').style.display=crisis?'':'none';}
 sync();
 function log(s){ if(window.console) console.log(s); }
+
+/* форматирование */
+const fmt=x=>'$'+x.toFixed(2), f1=x=>'$'+x.toFixed(1);
+const pc1=x=>(x>=0?'+':'−')+Math.abs(x).toFixed(1)+'%';   // из числа-процента
+const pc2=x=>(x>=0?'+':'−')+Math.abs(x).toFixed(2)+'%';
 
 /* ---- данные через бэкенд Tiingo (ключ на сервере) ---- */
 async function getData(sym,start){
@@ -143,7 +182,7 @@ async function getLive(sym){
   return +p;
 }
 
-/* ---- ISO-неделя (для определения текущей недели) ---- */
+/* ---- ISO-неделя ---- */
 function isoWeekKey(dt){
   const day=(dt.getUTCDay()+6)%7,th=new Date(dt);th.setUTCDate(dt.getUTCDate()-day+3);
   const y=th.getUTCFullYear(),j4=new Date(Date.UTC(y,0,4));
@@ -153,6 +192,7 @@ function isoWeekKey(dt){
 
 /* ---- индикаторы (порт из бэктеста, сверено с TradingView) ---- */
 function ewm(a,al){const o=new Array(a.length);let s=a[0]||0;o[0]=s;for(let i=1;i<a.length;i++){s=al*a[i]+(1-al)*s;o[i]=s;}return o;}
+function smaArr(a,n){const o=new Array(a.length).fill(NaN);let s=0;for(let i=0;i<a.length;i++){s+=a[i];if(i>=n)s-=a[i-n];if(i>=n-1)o[i]=s/n;}return o;}
 function adxChop(rows,n=14){
   const N=rows.length,tr=new Array(N).fill(0),pdm=new Array(N).fill(0),mdm=new Array(N).fill(0);
   for(let i=1;i<N;i++){const h=rows[i].h,l=rows[i].l,pc=rows[i-1].c;
@@ -172,66 +212,97 @@ function weeklyCloses(rows){const wk=[];let cur=null,last=null;
     if(key!==cur){if(last)wk.push(last);cur=key;}last={key,c:r.c,d:r.d};}
   if(last)wk.push(last);return wk;}
 
-const fmt=x=>'$'+x.toFixed(2), f1=x=>'$'+x.toFixed(1);
-
-/* ---- термометр TQQQ (двойной) ---- */
-function thermTQQQ(ath,cur,tqCur,tqAth){
-  const Y={ath:30,yellow:98,exit:158,t1:220,t2:282,t3:342};
-  const ddCur=100*(cur/ath-1);
-  const yCur=Math.max(46,30+(98-30)*Math.min(1,(-ddCur)/5.3));
-  const L={};for(const k of['yellow','exit','t1','t2','t3'])L[k]=ath*MULT[k];
-  const tq=k=>tqCur*Math.pow(L[k]/cur,3);
-  const R=(y,pL,pR,dd,col,b)=>{const w=b?4:2.5,fw=b?'600':'400';
-    return`<line x1="92" y1="${y}" x2="108" y2="${y}" stroke="${col}" stroke-width="${w}"/>`+
-    `<line x1="292" y1="${y}" x2="308" y2="${y}" stroke="${col}" stroke-width="${w}"/>`+
-    `<text x="86" y="${y+5}" fill="var(--ink)" text-anchor="end" font-weight="${fw}">${pL}</text>`+
-    `<text x="314" y="${y+5}" fill="var(--ink)" font-weight="${fw}">${pR}</text>`+
-    `<text x="200" y="${y+5}" fill="var(--ink)" text-anchor="middle" font-weight="${fw}">${dd}</text>`;};
-  let g=R(Y.ath,fmt(ath),'ATH','','var(--sec)',false);
-  // подписи текущей цены не должны налезать на соседние уровни (ATH сверху, −5,3% снизу):
-  // сама точка и линия остаются на правдивом месте, сдвигаются только подписи
-  const GAP=16;let yTxt=yCur;
-  if(yTxt-Y.ath<GAP)yTxt=Y.ath+GAP;
-  if(Y.yellow-yTxt<GAP)yTxt=Y.yellow-GAP;
-  g+=`<line x1="100" y1="${yCur}" x2="300" y2="${yCur}" stroke="#378ADD" stroke-dasharray="3 4" opacity="0.4"/>`+
-     `<circle cx="100" cy="${yCur}" r="8" fill="#378ADD" stroke="var(--surf)" stroke-width="2"/>`+
-     `<circle cx="300" cy="${yCur}" r="8" fill="#378ADD" stroke="var(--surf)" stroke-width="2"/>`+
-     `<text x="86" y="${yTxt+5}" fill="#378ADD" text-anchor="end" font-weight="600">${fmt(cur)}</text>`+
-     `<text x="314" y="${yTxt+5}" fill="#378ADD" font-weight="600">${fmt(tqCur)}</text>`+
-     `<text x="200" y="${yTxt+5}" fill="#378ADD" text-anchor="middle" font-weight="600">${ddCur.toFixed(1)}%</text>`;
-  g+=R(Y.yellow,fmt(L.yellow),f1(tq('yellow')),'−5,3%','#7E4A0A',true);
-  g+=R(Y.exit,fmt(L.exit),f1(tq('exit')),'−11,2%','#9E2B2B',true);
-  g+=R(Y.t1,fmt(L.t1),f1(tq('t1')),'−20,6%','var(--sec)',false);
-  g+=R(Y.t2,fmt(L.t2),f1(tq('t2')),'−29,5%','var(--sec)',false);
-  g+=R(Y.t3,fmt(L.t3),f1(tq('t3')),'−41,5%','var(--sec)',false);
-  return`<svg viewBox="0 0 400 356" role="img" style="width:100%"><title>Термометры QQQ и TQQQ</title>
-    <text x="100" y="15" font-size="14" font-family="var(--mono)" fill="var(--sec)" text-anchor="middle">QQQ</text>
-    <text x="300" y="15" font-size="14" font-family="var(--mono)" fill="var(--sec)" text-anchor="middle">TQQQ</text>
-    <line x1="100" y1="26" x2="100" y2="348" stroke="var(--rule2)" stroke-width="2.5"/>
-    <line x1="300" y1="26" x2="300" y2="348" stroke="var(--rule2)" stroke-width="2.5"/>
-    <g font-size="15" font-family="var(--mono)">${g}</g></svg>`;
+/* ---- МАШИНА СОСТОЯНИЙ МОДУЛЯ (порт run_module из бэктеста) ----
+   Прогон по дневным закрытиям QQQ. Возвращает состояние последнего бара:
+   state (BASE/RISKON/CORE_OFF), счётчики ci/co, pending, наклон, D, флаг растяжения,
+   и был ли предыдущий бар в разгоне (для ярлыка «разгон погашен»). */
+function runModule(closes,ema20,sma200){
+  const N=closes.length,{ENTER,EXIT,CIN,COUT,DOX,DREL,YEL,RED,SW}=MOD;
+  let state='BASE',ci=0,co=0,pending=null,overext=false,ath=-Infinity,prev='BASE';
+  let out=null;
+  for(let i=0;i<N;i++){
+    ath=Math.max(ath,closes[i]);
+    const dd=closes[i]/ath-1;
+    const slope=(i>=SW&&ema20[i-SW])?ema20[i]/ema20[i-SW]-1:NaN;
+    const D=sma200[i]?closes[i]/sma200[i]-1:NaN;
+    if(!isNaN(D)){if(D>=DOX)overext=true;else if(D<DREL)overext=false;}
+    prev=state;
+    let ns;
+    if(dd<=RED){ns='CORE_OFF';ci=co=0;pending=null;}
+    else if(dd<=YEL){ns='BASE';ci=co=0;pending=null;}
+    else{
+      ns=(state==='CORE_OFF')?'BASE':state;
+      if(ns==='BASE'){
+        const want=(!isNaN(slope)&&slope>ENTER&&!overext)?'RISKON':null;
+        if(want&&want===pending)ci++;
+        else if(want){pending=want;ci=1;}
+        else{pending=null;ci=0;}
+        if(pending&&ci>=CIN){ns=pending;pending=null;ci=0;}
+      }else if(ns==='RISKON'){
+        if(overext){ns='BASE';co=0;}
+        else if(!isNaN(slope)&&slope<EXIT){co++;if(co>=COUT){ns='BASE';co=0;}}
+        else co=0;
+      }
+    }
+    state=ns;
+    out={state,ci,co,pending,slope,D,dd,overext,prevRiskon:(prev==='RISKON')};
+  }
+  return out;
 }
 
-/* ---- термометр QDTE (одиночный, статусы) ---- */
-function thermQDTE(ath,cur){
-  const ddCur=100*(cur/ath-1);
-  const L={yellow:ath*MULT.yellow,exit:ath*MULT.exit,bear:ath*MULT.bear};
-  const yCur=Math.max(70,30+(112-30)*Math.min(1,(-ddCur)/5.3));
-  const row=(y,p,t,col)=>`<line x1="92" y1="${y}" x2="108" y2="${y}" stroke="${col}" stroke-width="4"/>`+
-    `<text x="86" y="${y+5}" fill="var(--ink)" text-anchor="end" font-weight="600">${p}</text>`+
-    `<text x="116" y="${y+5}" fill="var(--ink)" font-weight="600">${t}</text>`;
-  let g=`<line x1="92" y1="30" x2="108" y2="30" stroke="var(--rule2)" stroke-width="2.5"/>`+
-    `<text x="86" y="35" fill="var(--ink)" text-anchor="end">${fmt(ath)}</text><text x="116" y="35" fill="var(--muted)" font-size="12">ATH</text>`;
-  g+=`<circle cx="100" cy="${yCur}" r="8" fill="#378ADD" stroke="var(--surf)" stroke-width="2"/>`+
-    `<text x="86" y="${yCur+5}" fill="#378ADD" text-anchor="end" font-weight="600">${fmt(cur)}</text>`+
-    `<text x="116" y="${yCur+5}" fill="#378ADD" font-weight="600">${ddCur.toFixed(1)}% · норма</text>`;
-  g+=row(132,fmt(L.yellow),'−5,3% · жёлтый','#7E4A0A');
-  g+=row(210,fmt(L.exit),'−11,2% · красный','#9E2B2B');
-  g+=row(330,fmt(L.bear),'−20,0% · медвежий','#26215C');
-  return`<svg viewBox="0 0 400 360" role="img" style="width:100%"><title>Термометр QQQ · статусы QDTE</title>
-    <text x="100" y="15" font-size="14" font-family="var(--mono)" fill="var(--sec)" text-anchor="middle">QQQ</text>
-    <line x1="100" y1="26" x2="100" y2="350" stroke="var(--rule2)" stroke-width="2.5"/>
-    <g font-size="15" font-family="var(--mono)">${g}</g></svg>`;
+/* ---- ВИД КАРТОЧКИ МОДУЛЯ (стандартный режим) ----
+   Приоритет: жёлтая зона → опасное отклонение → фаза тренда.
+   ddFrac — живая просадка (доля), m — состояние последнего бара. */
+function moduleView(m,ddFrac){
+  const stt=(m.state==='CORE_OFF')?'BASE':m.state;
+  const sl=m.slope*100, D=m.D*100;
+  const DOT={acc:'var(--acc)',base:'var(--sec)',warn:'var(--warn-dot)',ok:'var(--ok-dot)'};
+  const COL={acc:'var(--acc)',base:'var(--sec)',warn:'var(--warn)',ok:'var(--ok)'};
+  let label,dot,col,dist,ind,act;
+
+  if(ddFrac<=MOD.YEL){                                   // жёлтая зона → база принудительно
+    label='жёлтая зона';dot=DOT.warn;col=COL.warn;dist=W40;
+    ind=[`просадка QQQ <b>${pc1(ddFrac*100)}</b> ≤ −5,3% — принудительная база`,`сигнал наклона игнорируется`];
+    act=m.prevRiskon?('ребаланс → '+W40):W40;
+  }else if(m.overext){                                   // опасное отклонение от SMA200
+    label='опасное отклонение от SMA200';dot=DOT.warn;col=COL.warn;dist=W40;
+    if(m.prevRiskon)
+      ind=[`отклонение от SMA200 <b>${pc1(D)}</b> ≥ 20% — разгон погашен без подтверждения`,`снятие при &lt;18%`];
+    else
+      ind=[`наклон EMA20 <b>${pc2(sl)}</b> · вход &gt;+0,9% ✓`,`отклонение от SMA200 <b>${pc1(D)}</b> ≥ 20% — разгон запрещён`,`снятие при &lt;18%`];
+    act=m.prevRiskon?('ребаланс → '+W40):W40;
+  }else if(stt==='RISKON'){
+    if(m.co>0){                                          // тренд замедляется → слабый
+      label='тренд замедляется → слабый';dot=DOT.acc;col=COL.acc;dist=W60;
+      ind=[`наклон EMA20 <b>${pc2(sl)}</b> · выход &lt;+0,4% ✓`,`подтверждение выхода: <b>${m.co}</b> из 3`];
+      act=W60+', переход к '+W40+' при 3 дне подтверждения';
+    }else{                                               // тренд устойчиво сильный
+      label='тренд устойчиво сильный';dot=DOT.acc;col=COL.acc;dist=W60;
+      ind=[`наклон EMA20 <b>${pc2(sl)}</b> · держится · выход &lt;+0,4%`,`отклонение от SMA200 <b>${pc1(D)}</b> · лимит 20%`,`жёлтая зона: нет`];
+      act=W60;
+    }
+  }else{                                                 // BASE
+    if(m.pending==='RISKON'&&m.ci>0){                    // тренд ускоряется → сильный
+      label='тренд ускоряется → сильный';dot=DOT.acc;col=COL.acc;dist=W40;
+      ind=[`наклон EMA20 <b>${pc2(sl)}</b> · вход &gt;+0,9% ✓`,`подтверждение входа: <b>${m.ci}</b> из 5`,`отклонение от SMA200 <b>${pc1(D)}</b> · лимит 20%`];
+      act=W40+', переход к '+W60+' при 5 дне подтверждения';
+    }else{                                               // тренд устойчиво слабый
+      label='тренд устойчиво слабый';dot=DOT.base;col=COL.base;dist=W40;
+      ind=[`наклон EMA20 <b>${pc2(sl)}</b> · вход &gt;+0,9% — нет`,`отклонение от SMA200 <b>${pc1(D)}</b> · лимит 20%`,`жёлтая зона: нет`];
+      act=W40;
+    }
+  }
+  return{label,dot,col,dist,ind,act};
+}
+
+/* сборка карточки состояния */
+function scard(v){
+  return `<div class="scard">`+
+    `<div class="st"><span class="dot" style="background:${v.dot}"></span>`+
+    `<span class="lb">${v.col?`<span style="color:${v.col}">${v.label}</span>`:v.label}${v.dist?` · ${v.dist}`:''}</span></div>`+
+    `<div class="ind">${v.ind.map(x=>`<div>${x}</div>`).join('')}</div>`+
+    (v.act?`<div class="act"><b>Действие:</b> ${v.act}</div>`:'')+
+    `</div>`;
 }
 
 /* ---- прогон ---- */
@@ -254,11 +325,18 @@ async function runAdvisor(){
     catch(e){log('QDTE: '+e.message);}
 
     const last=q[q.length-1],ath=Math.max(...q.map(r=>r.c));
-    const live=(qqqLive!=null);            // удалось ли получить внутридневную цену
-    const cur=(live?qqqLive:last.c);       // «текущая» цена QQQ: живая, иначе последнее закрытие
-    const dd=100*(cur/ath-1);
+    const live=(qqqLive!=null);
+    const cur=(live?qqqLive:last.c);
+    const ddFrac=cur/ath-1, dd=100*ddFrac;
     const {adx,chop}=adxChop(q);
-    // недельный сигнал: живая цена = предварительное закрытие текущей недели
+
+    /* индикаторы модуля по дневным закрытиям QQQ */
+    const closes=q.map(r=>r.c);
+    const ema20=ewm(closes,2/21);          // span 20 → alpha 2/21 (как ewm(span=20) в бэктесте)
+    const sma200=smaArr(closes,200);
+    const mod=runModule(closes,ema20,sma200);
+
+    /* недельный сигнал */
     const wk=weeklyCloses(q);
     const nowKey=isoWeekKey(new Date()),lastBarKey=wk[wk.length-1].key;
     const curW=cur;
@@ -272,97 +350,125 @@ async function runAdvisor(){
     const L={};for(const k in MULT)L[k]=ath*MULT[k];
     const tqAt=k=>tqCur?tqCur*Math.pow(L[k]/cur,3):null;
 
-    /* ===== TQQQ ===== */
-    $('tq-nums').innerHTML=`QQQ <b>${fmt(cur)}</b> · ATH <b>${fmt(ath)}</b>`+
-      (tqCur?` &nbsp;|&nbsp; TQQQ <b>${fmt(tqCur)}</b>`:'');
-    $('tq-therm').innerHTML=tqCur?thermTQQQ(ath,cur,tqCur,tqAth):
-      `<div style="color:var(--sec);font-size:.9rem;padding:16px 0">Цена TQQQ недоступна. Уровни QQQ: выход ${fmt(L.exit)}, транши ${fmt(L.t1)}/${fmt(L.t2)}/${fmt(L.t3)}.</div>`;
-
-    // статус (цвет от просадки QQQ)
+    /* мастер-статус (цвет от просадки QQQ) */
     let stName,stCls;
     if(dd>DD.yellow){stName='норма';stCls='b-ok';}
     else if(dd>DD.exit){stName='жёлтый';stCls='b-warn';}
     else if(dd>DD.bear){stName='красный';stCls='b-red';}
     else{stName='медвежий';stCls='b-bear';}
 
-    // сигнал (состояние позиции + действие)
-    const st=$('state').value;let sig,fore,foreSub='';
-    if(st==='POS'){
+    /* шапка */
+    $('hdr').innerHTML=`QQQ <b>${fmt(cur)}</b>${live?' <span class="live">LIVE</span>':''} · ATH <b>${fmt(ath)}</b> · просадка <b>${pc1(dd)}</b>`;
+    $('hdr-badge').innerHTML=`<span class="badge ${stCls}"><span class="dot"></span>${stName}</span>`;
+
+    const st=$('state').value, standard=(st==='POS');
+
+    /* плашка режима (информационная) */
+    $('regime').innerHTML=standard
+      ? `<div class="regime"><div class="t">Стандартный режим · управляет модуль</div><div class="s">слабый тренд — ${W40} · сильный тренд — ${W60}</div></div>`
+      : `<div class="regime crisis"><div class="t">Кризис · управляет ядро</div><div class="s">модуль выключен · лестница и ступенчатый выход</div></div>`;
+
+    /* ================= TQQQ ================= */
+    $('tq-nums').innerHTML=`QQQ <b>${fmt(cur)}</b>`+(tqCur?` · TQQQ <b>${fmt(tqCur)}</b>`:'');
+    const priceCell=(k,q)=>{const tq=tqAt(k);return tq!=null?`${f1(tq)} <span class="paren">(${fmt(q)})</span>`:`${fmt(q)}`;};
+    const priceRaw=(tqv,qv)=>tqv!=null?`${f1(tqv)} <span class="paren">(${fmt(qv)})</span>`:`${fmt(qv)}`;
+
+    if(standard){
+      /* уровни: ATH, текущий, жёлтый, выход */
+      const tqAthP=tqCur?tqCur*Math.pow(ath/cur,3):null;
+      $('tq-left').innerHTML=`<div class="lvls">`+
+        `<div class="h"><span></span><span>${tqCur?'TQQQ (QQQ)':'QQQ'}</span></div>`+
+        `<div class="l"><span class="c-m">ATH</span><span>${priceRaw(tqAthP,ath)}</span></div>`+
+        `<div class="l"><span class="c-cur">сейчас ${pc1(dd)}</span><span>${priceRaw(tqCur,cur)}</span></div>`+
+        `<div class="l"><span class="c-y">−5,3% жёлтый</span><span>${priceCell('yellow',L.yellow)}</span></div>`+
+        `<div class="l"><span class="c-r">−11,2% выкл</span><span>${priceCell('exit',L.exit)}</span></div>`+
+        `</div>`;
+      /* карточка: сигнал выхода имеет приоритет над модулем */
       const exitSig=prevW>L.exit&&curW<=L.exit;
       if(exitSig){
-        sig=`<span class="soft">Пересечён −11,2%.</span> Продать 100% TQQQ → SGOV. Выставить лимитки траншей.`;
-        fore=`после выхода — лестница, транш 1 на уровне QQQ ${fmt(L.t1)}`;
+        $('tq-right').innerHTML=scard({label:'Красный · выход',dot:'var(--red-dot)',col:'var(--red)',dist:'',
+          ind:[`пересечён −11,2% (недельное закрытие)`,`продать 100% TQQQ → SGOV, выставить лестницу`,`транш 1 — докупка на уровне QQQ ${fmt(L.t1)}`],
+          act:'переключить фазу на «Кризис»'});
+        $('tq-hint').style.display='';
+        $('tq-hint').textContent='Сигнал выхода читается по закрытию недели — в пятницу вечером. Все цены внутридневные (Tiingo IEX).';
       }else{
-        sig=`В позиции 100%. <span class="soft">Действий нет</span>`;
-        const te=tqAt('exit');
-        fore=te?`выход · продать TQQQ ниже <span class="price">${fmt(te)}</span> <span class="ref">при QQQ — ${fmt(L.exit)}</span>`
-               :`выход при закрытии недели ниже QQQ ${fmt(L.exit)}`;
+        $('tq-right').innerHTML=scard(moduleView(mod,ddFrac));
+        $('tq-hint').style.display='';
+        $('tq-hint').textContent='Наклон EMA20 и SMA200 считаются по дневному закрытию QQQ. Выключение модуля — по закрытию недели ниже −11,2%.';
       }
     }else{
-      const lv=$('lastlvl').value;
-      const key={exit:'exit',t1:'t1',t2:'t2',t3:'t3'}[lv];
-      const ref=L[key],tqRef=tqAt(key);
-      const refTxt=tqRef?`<span class="price">${fmt(tqRef)}</span> <span class="ref">при QQQ — ${fmt(ref)}</span>`:`при QQQ — ${fmt(ref)}`;
+      /* кризис: лестница ядра */
+      $('tq-left').innerHTML=`<div class="lvls">`+
+        `<div class="h"><span></span><span>${tqCur?'TQQQ (QQQ)':'QQQ'}</span></div>`+
+        `<div class="l"><span class="c-cur">сейчас ${pc1(dd)}</span><span>${priceRaw(tqCur,cur)}</span></div>`+
+        `<div class="l"><span class="c-r">−11,2% выход</span><span>${priceCell('exit',L.exit)}</span></div>`+
+        `<div class="l"><span class="c-m">−20,6% транш 1</span><span>${priceCell('t1',L.t1)}</span></div>`+
+        `<div class="l"><span class="c-m">−29,5% транш 2</span><span>${priceCell('t2',L.t2)}</span></div>`+
+        `<div class="l"><span class="c-m">−41,5% транш 3</span><span>${priceCell('t3',L.t3)}</span></div>`+
+        `</div>`;
+      const lv=$('lastlvl').value, order=['exit','t1','t2','t3'], idx=order.indexOf(lv), nxt=order[idx+1];
+      const ref=L[lv], tqRef=tqAt(lv);
+      const refTxt=tqRef!=null?`${f1(tqRef)} (QQQ ${fmt(ref)})`:`QQQ ${fmt(ref)}`;
       const okRe=curW>ref&&adx>25&&chop<45;
-      const order=['exit','t1','t2','t3'],idx=order.indexOf(key),nxt=order[idx+1];
-      const nxtName={t1:'транш 2',t2:'транш 3',t3:null}[key];
-      // позиции по фазе
-      const posMap={exit:['В SGOV 100%',null],t1:['В позиции 10%, в SGOV 90%','транш 2'],
-        t2:['В позиции 35%, в SGOV 65%','транш 3'],t3:['В позиции 100%. Лестница отработана полностью',null]};
-      const [posTxt,waitT]=posMap[key];
-      if(okRe){
-        sig=`<span class="soft">Прошёл разворот тренда.</span> Возврат остатка в позицию.`+(weekDone?'':' <span class="ref">(неделя не закрыта)</span>');
-      }else if(key==='t3'){
-        sig=`${posTxt}. <span class="soft">Ждём возврат остатка на уровне ${refTxt}</span>`;
-      }else{
-        sig=`${posTxt}. <span class="soft">Ждём ${waitT} или возврат остатка на уровне ${refTxt}</span>`;
+      const posMap={exit:'в SGOV 100%',t1:'в позиции 10%, в SGOV 90%',t2:'в позиции 35%, в SGOV 65%',t3:'в позиции 100%, лестница отработана'};
+      const nxtName={exit:'транш 1',t1:'транш 2',t2:'транш 3',t3:null}[lv];
+      let label,ind;
+      if(okRe){label='Красный · возврат';
+        ind=[`разворот тренда подтверждён`,`вернуть остаток в позицию`+(weekDone?'':' (неделя не закрыта)'),`возврат: закрытие выше уровня-ордера + ADX&gt;25 + CHOP&lt;45 · сейчас ADX ${adx.toFixed(1)}, CHOP ${chop.toFixed(1)}`];
+      }else{label='Красный · в кэше';
+        const nx=nxt?tqAt(nxt):null;
+        const foreL=nxtName&&nxt?`${nxtName} — докупить на уровне ${nx!=null?f1(nx)+' (QQQ '+fmt(L[nxt])+')':'QQQ '+fmt(L[nxt])}`:'лестница исчерпана — ждём возврата остатка';
+        ind=[posMap[lv],foreL,`возврат: закрытие выше уровня-ордера + ADX&gt;25 + CHOP&lt;45 · сейчас ADX ${adx.toFixed(1)}, CHOP ${chop.toFixed(1)}`];
       }
-      if(nxt&&nxtName){const tn=tqAt(nxt);
-        fore=`${nxtName} · докупить TQQQ на уровне <span class="price">${tn?fmt(tn):''}</span> <span class="ref">при QQQ — ${fmt(L[nxt])}</span>`;}
-      else fore='лестница исчерпана — ждём возврата остатка';
-      foreSub=`возврат при закрытии выше уровня-ордера + ADX&gt;25 + CHOP&lt;45 · сейчас ADX ${adx.toFixed(1)}, CHOP ${chop.toFixed(1)}`;
+      $('tq-right').innerHTML=scard({label,dot:'var(--red-dot)',col:'var(--red)',dist:'',ind,act:''});
+      $('tq-hint').style.display='none';
     }
-    $('tq-rows').innerHTML=
-      `<div class="r status"><span class="lbl">Статус</span><span class="badge ${stCls}"><span class="dot"></span>${stName}</span></div>`+
-      `<div class="r"><div class="lbl">Сигнал</div><div class="sig">${sig}</div></div>`+
-      `<div class="r"><div class="lbl">Прогноз</div><div class="fore">${fore}${foreSub?`<div class="sub">${foreSub}</div>`:''}</div></div>`+
-      `<div class="livehint">Все цифры — внутридневные (Tiingo IEX). Сигнал выхода/возврата читается по закрытию недели — в пятницу вечером.</div>`;
 
-    /* ===== QDTE ===== */
+    /* ================= QDTE ================= */
     $('qd-nums').innerHTML=(qdCur?`QDTE <b>${fmt(qdCur)}</b> <span class="ref">(справочно)</span> · `:'')+`ADX ${adx.toFixed(1)} · CHOP ${chop.toFixed(1)}`;
-    $('qd-therm').innerHTML=thermQDTE(ath,cur);
+    $('qd-left').innerHTML=`<div class="lvls">`+
+      `<div class="h q"><span></span><span>QQQ</span><span>действие</span></div>`+
+      `<div class="l q"><span class="c-ok">норма</span><span class="c-ok">&gt;${fmt(L.yellow)}</span><span class="c-ok">реинвест</span></div>`+
+      `<div class="l q"><span class="c-y">−5,3% жёлтый</span><span class="c-y">${fmt(L.yellow)}</span><span class="c-y">в SGOV</span></div>`+
+      `<div class="l q"><span class="c-r">−11,2% красный</span><span class="c-r">${fmt(L.exit)}</span><span class="c-r">выход 50%</span></div>`+
+      `<div class="l q"><span class="c-b">−20,0% медв.</span><span class="c-b">${fmt(L.bear)}</span><span class="c-b">выход 100%</span></div>`+
+      `</div>`;
 
-    // статус QDTE = тот же цвет от просадки
-    let qName=stName,qCls=stCls;
-    // выплаты: реинвест выше −5,3%, иначе SGOV
-    const reinvest=dd>DD.yellow;
-    // сигнал по фазе позиции QDTE
-    const qs=$('qstate').value;let qsig,qfore,qforeSub='';
-    if(qs==='FULL'){
-      if(dd>DD.yellow){qsig=`В QDTE 100%. <span class="soft">Выплаты реинвестируются</span>`;
-        qfore=`Выплаты в защитный актив при QQQ — <span class="price">${fmt(L.yellow)}</span>`;}
-      else if(dd>DD.exit){qsig=`В QDTE 100%. <span class="soft">Выплаты в защитный актив (SGOV)</span>`;
-        qfore=`Выход в защитный актив 50% при QQQ — <span class="price">${fmt(L.exit)}</span>`;}
-      else{qsig=`<span class="soft">Достигнут красный уровень.</span> Выход в защитный актив 50%`;
-        qfore=`Выход в защитный актив 100% при QQQ — <span class="price">${fmt(L.bear)}</span>`;}
-    }else if(qs==='HALF'){
-      const okBack=curW>L.exit&&adx>25&&chop<45;
-      if(dd<=DD.bear){qsig=`<span class="soft">Достигнут медвежий уровень.</span> Выход в защитный актив 100%`;}
-      else if(okBack){qsig=`Выход в защитный актив 50%. <span class="soft">Условия возврата остатка выполнены — вернуть остаток в QDTE</span>`;}
-      else{qsig=`Выход в защитный актив 50%. <span class="soft">Ждём возврат остатка (закрытие выше −11,2% + ADX&gt;25 + CHOP&lt;45)</span>`;}
-      qfore=`возврат остатка при закрытии выше QQQ — <span class="price">${fmt(L.exit)}</span>`;
-    }else{ // OUT
-      const okBack1=curW>L.bear&&adx>25&&chop<45;
-      if(okBack1){qsig=`Выход в защитный актив 100%. <span class="soft">Условия первого транша выполнены — вернуть 50% в QDTE</span>`;}
-      else{qsig=`Выход в защитный актив 100%. <span class="soft">Ждём возврат 50% (закрытие выше −20% + ADX&gt;25 + CHOP&lt;45)</span>`;}
-      qfore=`возврат 50% при закрытии выше QQQ — <span class="price">${fmt(L.bear)}</span>, затем остаток выше ${fmt(L.exit)}`;
+    if(standard){
+      /* держим 100%, различие только в судьбе выплат (норма/жёлтый) */
+      let ind,act;
+      if(dd>DD.yellow){
+        ind=[`просадка QQQ <b>${pc1(dd)}</b> · норма`,`красный −11,2%: не достигнут`,`медвежий −20,0%: не достигнут`];
+        act='держать 100%, выплаты реинвестировать';
+      }else{
+        ind=[`просадка QQQ <b>${pc1(dd)}</b> ≤ −5,3% · жёлтый`,`красный −11,2%: не достигнут`];
+        act='держать 100%, выплаты — в SGOV';
+      }
+      $('qd-right').innerHTML=scard({label:'Держать 100%',dot:'var(--ok-dot)',col:'var(--ok)',dist:'',ind,act});
+    }else{
+      /* кризис: ступенчатый выход/возврат по журнальной фазе QDTE */
+      const qs=$('qstate').value;let label,dot,col,ind,act;
+      if(qs==='FULL'){
+        if(dd<=DD.bear){label='Медвежий · выход 100%';dot='var(--bear-dot)';col='var(--bear)';
+          ind=[`просадка QQQ <b>${pc1(dd)}</b> ≤ −20,0%`];act='выход 100% в SGOV';}
+        else{label='Красный · выход 50%';dot='var(--red-dot)';col='var(--red)';
+          ind=[`просадка QQQ <b>${pc1(dd)}</b> ≤ −11,2%`,`медвежий −20,0%: не достигнут`];act='выход 50% в SGOV, выплаты — в SGOV';}
+      }else if(qs==='HALF'){
+        const okBack=curW>L.exit&&adx>25&&chop<45;
+        label='Красный · выход 50%';dot='var(--red-dot)';col='var(--red)';
+        if(dd<=DD.bear){ind=[`просадка QQQ <b>${pc1(dd)}</b> ≤ −20,0%`];act='выход 100% в SGOV';}
+        else if(okBack){ind=[`условия возврата выполнены`,`возврат: закрытие выше −11,2% + ADX&gt;25 + CHOP&lt;45 · сейчас ADX ${adx.toFixed(1)}, CHOP ${chop.toFixed(1)}`];act='вернуть остаток в QDTE';}
+        else{ind=[`ждём возврат остатка`,`возврат: закрытие выше −11,2% + ADX&gt;25 + CHOP&lt;45 · сейчас ADX ${adx.toFixed(1)}, CHOP ${chop.toFixed(1)}`];act='держать 50% в SGOV';}
+      }else{ // OUT
+        const okBack1=curW>L.bear&&adx>25&&chop<45;
+        label='Медвежий · выход 100%';dot='var(--bear-dot)';col='var(--bear)';
+        if(okBack1){ind=[`условия первого транша выполнены`,`возврат: закрытие выше −20% + ADX&gt;25 + CHOP&lt;45 · сейчас ADX ${adx.toFixed(1)}, CHOP ${chop.toFixed(1)}`];act='вернуть 50% в QDTE';}
+        else{ind=[`ждём возврат 50%`,`возврат: закрытие выше −20% + ADX&gt;25 + CHOP&lt;45 · сейчас ADX ${adx.toFixed(1)}, CHOP ${chop.toFixed(1)}`];act='держать 100% в SGOV';}
+      }
+      $('qd-right').innerHTML=scard({label,dot,col,dist:'',ind,act});
     }
-    $('qd-rows').innerHTML=
-      `<div class="r status"><span class="lbl">Статус</span><span class="badge ${qCls}"><span class="dot"></span>${qName}</span></div>`+
-      `<div class="r"><div class="lbl">Сигнал</div><div class="sig">${qsig}</div></div>`+
-      `<div class="r"><div class="lbl">Прогноз</div><div class="fore">${qfore}${qforeSub?`<div class="sub">${qforeSub}</div>`:''}</div></div>`;
 
-    // здоровье выплат
+    /* здоровье выплат */
     let hHtml;
     if(qdDivs&&qdDivs.length>=1){
       const lastD=qdDivs[qdDivs.length-1].a;
@@ -391,7 +497,7 @@ async function runAdvisor(){
   }catch(e){log('ОШИБКА: '+e.message);$('warnbar').style.display='';$('warnbar').textContent='Ошибка: '+e.message;$('meta').textContent='ошибка загрузки';}
 }
 
-// автозапуск при открытии страницы; обновление — перезагрузкой (F5)
+/* автозапуск при открытии; обновление — перезагрузкой (F5) */
 runAdvisor().then(()=>{window.__loaded=true;});
 </script>
 </body>

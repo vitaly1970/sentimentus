@@ -8,61 +8,102 @@
 <link href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&family=PT+Mono&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-:root{--bg:#0E1620;--panel:#17212E;--panel2:#1E2A3A;--ink:#EAF2FB;--ink2:#8FA3B8;--line:#2C3A4C;
---green:#18C37A;--green-bg:#0C3A2A;--green-line:#1FE38F;
---red:#FF5A4D;--red-bg:#3A1512;
---amber:#FFB020;--amber-bg:#3A2A08;
---fear:#FF5A4D;--greed:#18C37A}
+:root{--bg:#F5F6F8;--panel:#FFFFFF;--panel2:#F0F2F5;--ink:#16212C;--ink2:#5C6B7A;--line:#DFE3E8;
+--green:#0E9F6E;--green-bg:#E4F7EF;--green-line:#0E9F6E;--green-ink:#0A7A56;
+--red:#D6362F;--red-bg:#FBE7E6;
+--amber:#C2760C;--amber-bg:#FBF0DC;--amber-ink:#8F5A09;
+--fear:#D6362F;--greed:#0E9F6E}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--ink);font-family:'PT Sans',sans-serif;padding:22px;max-width:1060px;margin:0 auto}
 .mono{font-family:'PT Mono',monospace}
+nav.sitenav{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+nav.sitenav a{text-decoration:none;font-size:13px;padding:6px 14px;border:1px solid var(--line);border-radius:6px;
+  background:var(--panel);color:var(--ink2);font-weight:700;transition:border-color .15s,color .15s}
+nav.sitenav a:hover{border-color:var(--ink2);color:var(--ink)}
+nav.sitenav a.active{color:var(--ink);border-color:var(--green-line);box-shadow:0 0 0 1px rgba(14,159,110,.2) inset}
 header{display:flex;justify-content:space-between;align-items:baseline;border-bottom:2px solid var(--line);padding-bottom:10px;margin-bottom:18px;flex-wrap:wrap;gap:8px}
 h1{font-size:24px;font-weight:700}
 #asof{font-size:15px;color:var(--ink2)}
-button{font-family:inherit;font-size:15px;padding:7px 18px;border:1px solid var(--green);background:transparent;color:var(--green);cursor:pointer;border-radius:4px;font-weight:700}
-button:hover{background:var(--green);color:#06110C}
+button{font-family:inherit;font-size:15px;padding:7px 18px;border:1px solid var(--green);background:transparent;color:var(--green);cursor:pointer;border-radius:4px;font-weight:700;transition:background .15s,color .15s}
+button:hover{background:var(--green);color:#FFFFFF}
 button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 .grid{display:grid;grid-template-columns:230px 1fr;gap:18px}
 @media(max-width:760px){.grid{grid-template-columns:1fr}}
 .rightcol{display:flex;flex-direction:column;gap:18px;justify-content:flex-start}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px}
 .panel h2{font-size:13px;text-transform:uppercase;letter-spacing:1.4px;color:var(--ink2);margin-bottom:12px;font-weight:700}
+.panel h2 .h2-sub{text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink2);opacity:.75}
 #status{padding:20px 22px;font-size:26px;font-weight:700;border-radius:10px;margin-bottom:18px;border:2px solid var(--line);background:var(--panel);letter-spacing:.3px}
-#status.green{background:var(--green-bg);border-color:var(--green-line);color:var(--green-line);box-shadow:0 0 22px rgba(31,227,143,.35)}
-#status.latch{background:var(--amber-bg);border-color:var(--amber);color:var(--amber);box-shadow:0 0 18px rgba(255,176,32,.28)}
+#status.green{background:var(--green-bg);border-color:var(--green-line);color:var(--green-ink)}
+#status.latch{background:var(--amber-bg);border-color:var(--amber);color:var(--amber-ink)}
 #status small{display:block;font-weight:400;font-size:16px;margin-top:6px;color:var(--ink2);letter-spacing:0}
 .comp-row{display:grid;grid-template-columns:120px 1fr 92px;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:17px;font-weight:700}
 .comp-row:last-child{border-bottom:none}
-.bar{height:14px;background:linear-gradient(90deg,#FF5A4D 0%,#FFB020 30%,#2C3A4C 50%,#0F9E63 70%,#18C37A 100%);border:1px solid var(--line);position:relative;border-radius:7px}
-.bar .tick{position:absolute;top:-4px;width:4px;height:22px;background:#fff;border-radius:2px;box-shadow:0 0 4px rgba(0,0,0,.6)}
-.bar .orline{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--green-line);left:5%;opacity:.7}
+.bar{height:14px;background:linear-gradient(90deg,#D6362F 0%,#C2760C 30%,#DFE3E8 50%,#3FAE84 70%,#0E9F6E 100%);border:1px solid var(--line);position:relative;border-radius:7px}
+.bar .tick{position:absolute;top:-4px;width:4px;height:22px;background:#16212C;border-radius:2px;box-shadow:0 0 0 2px #fff}
+.bar .orline{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--green-ink);left:5%;opacity:.7}
 .val{text-align:right;font-size:14px}
-.val.extreme{color:var(--green-line);font-weight:700}
+.val.extreme{color:var(--green-ink);font-weight:700}
 .dead{color:var(--ink2)}
 #log{display:none}
 #sources{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
 .src{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);
-     border-radius:3px;padding:8px 14px;font-size:15px;min-width:170px}
+     border-radius:3px;padding:8px 14px;font-size:15px;min-width:150px}
 .src .dot{width:11px;height:11px;border-radius:50%;background:var(--ink2);flex:none}
 .src.loading .dot{background:var(--amber);animation:pulse 1s infinite}
-.src.ok .dot{background:var(--green-line);animation:none;box-shadow:0 0 8px var(--green-line)}
-.src.fail .dot{background:var(--red);animation:none;box-shadow:0 0 8px var(--red)}
+.src.ok .dot{background:var(--green-line);animation:none;box-shadow:0 0 6px rgba(14,159,110,.5)}
+.src.fail .dot{background:var(--red);animation:none;box-shadow:0 0 6px rgba(214,54,47,.5)}
 .src small{display:block;color:var(--ink2);font-size:13px;font-weight:400}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* ---- аналитика ---- */
+#analysis{margin-top:18px}
+#analysis .panel{padding:20px 22px}
+.an-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:18px}
+.an-card{background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:12px 14px}
+.an-card .an-name{font-size:13px;color:var(--ink2);text-transform:uppercase;letter-spacing:.8px;font-weight:700;margin-bottom:4px}
+.an-card .an-val{font-family:'PT Mono',monospace;font-size:20px;font-weight:700;display:flex;align-items:baseline;gap:8px}
+.an-card .an-label{font-size:13px;font-weight:400;color:var(--ink2)}
+.an-card .an-trend{margin-top:6px;font-size:13px;color:var(--ink2);display:flex;gap:14px;font-family:'PT Mono',monospace}
+.an-card .an-trend b{font-weight:700}
+.tone-fear{color:var(--green-ink)}
+.tone-stress{color:var(--amber-ink)}
+.tone-neutral{color:var(--ink)}
+.tone-calm{color:var(--ink2)}
+.tone-greed{color:var(--red)}
+.arrow-down{color:var(--green-ink)}
+.arrow-up{color:var(--red)}
+.arrow-flat{color:var(--ink2)}
+.an-narrative{border-left:3px solid var(--line);padding-left:16px;display:flex;flex-direction:column;gap:10px}
+.an-narrative p{font-size:15px;line-height:1.55;color:var(--ink)}
+.an-narrative p .mono{color:var(--ink2)}
+.an-verdict{margin-top:4px;padding:14px 16px;border-radius:7px;background:var(--panel2);border:1px solid var(--line);
+  font-size:15px;line-height:1.5;font-weight:700}
+.an-verdict.tone-fear{border-color:var(--green-line);background:var(--green-bg);color:var(--green-ink)}
+.an-verdict.tone-stress{border-color:var(--amber);background:var(--amber-bg);color:var(--amber-ink)}
+.an-antirule{margin-top:12px;font-size:12.5px;color:var(--ink2);line-height:1.5;font-style:italic}
 </style>
 </head>
 <body>
+<nav class="sitenav">
+  <a href="/">Главная</a>
+  <a href="/bottom" class="active">Индикатор капитуляции</a>
+  <a href="/gex.html">GEX — дилерская гамма</a>
+</nav>
 <header>
   <h1>Индикатор капитуляции</h1>
   <div><span id="asof" class="mono">данные загружаются…</span>
   <button id="refresh" style="margin-left:12px">Обновить</button></div>
 </header>
-<div id="status">Загрузка данных…<small>обычно 5–20 секунд; состояние источников — ниже</small></div>
+<div id="status">Загрузка данных…<small>обычно 10–40 секунд; состояние источников — ниже</small></div>
 <div id="sources">
   <div class="src" id="src-vix"><span class="dot"></span><span>VIX<small id="src-vix-d">ожидание</small></span></div>
   <div class="src" id="src-vix3m"><span class="dot"></span><span>VIX3M<small id="src-vix3m-d">ожидание</small></span></div>
   <div class="src" id="src-naaim"><span class="dot"></span><span>NAAIM<small id="src-naaim-d">ожидание</small></span></div>
-  <div class="src" id="src-hyoas"><span class="dot"></span><span>HY OAS<small id="src-hyoas-d">ожидание</small></span></div>
+  <div class="src" id="src-credit"><span class="dot"></span><span>Credit<small id="src-credit-d">ожидание</small></span></div>
+  <div class="src" id="src-pc_eq"><span class="dot"></span><span>P/C equity<small id="src-pc_eq-d">ожидание</small></span></div>
+  <div class="src" id="src-pc_tot"><span class="dot"></span><span>P/C total<small id="src-pc_tot-d">ожидание</small></span></div>
+  <div class="src" id="src-aaii"><span class="dot"></span><span>AAII<small id="src-aaii-d">ожидание</small></span></div>
 </div>
 <div class="grid">
   <div class="panel"><h2>Композит</h2>
@@ -70,6 +111,13 @@ button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
   <div class="rightcol">
     <div class="panel"><h2>Компоненты (каузальный ранг, −10 страх … +10 жадность)</h2>
       <div id="components"></div></div>
+  </div>
+</div>
+<div id="analysis">
+  <div class="panel">
+    <h2>Аналитика <span class="h2-sub">— разбор по составляющим и заключение</span></h2>
+    <div id="an-grid" class="an-grid"></div>
+    <div id="an-narrative" class="an-narrative"></div>
   </div>
 </div>
 <div id="log"></div>
@@ -80,20 +128,18 @@ button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 
 const SPEC = {
   // name: [invert, ma]  invert=true: высокий сырой = страх
-  vix:    [true, 10],
-  vix_ts: [true,  5],
-  naaim:  [false, 3],
-  hy_oas: [true,  5],   // широкий кредитный спред = стресс = страх
-  // ── ФАЗА 2 (требует платных / непроверенных источников — сейчас НЕ грузим) ──
-  // pc_equity:[true,5], pc_total:[true,5] — CBOE put/call. Бесплатный CDN-архив
-  //   (…/volume_and_call_put_ratios/*pcarchive.csv) заморожен на 2012; живой дневной
-  //   фид только через CBOE DataShop (платно) либо скрейп daily-market-statistics.
-  // aaii:[false,3] — AAII bull-bear (aaii.com/files/surveys/sentiment.xls). Эндпоинт
-  //   жив, но доступ нестабилен (логин), поэтому в надёжный контур не берём.
+  vix:       [true, 10],
+  vix_ts:    [true,  5],
+  naaim:     [false, 3],
+  credit:    [true,  5],   // широкий кредитный спред (Baa−10Y) = стресс = страх
+  pc_equity: [true,  5],   // высокий put/call = паника = страх
+  pc_total:  [true,  5],
+  aaii:      [false, 3],   // низкий bull-bear спред = страх
+  // ── ФАЗА 2 (нет бесплатного надёжного источника — не грузим) ──
   // breadth:[false,5] — % S&P выше 200DMA / new-lows. Чистого бесплатного фида нет
   //   (investing.com/Barchart/StockCharts — скрейп/платно).
-  // Включение любого: 1) раскомментировать в SPEC; 2) в run() загрузить ряд и
-  //   parts.<name> = alignFFill(baseT, s, lim); 3) добавить чип src-<name> + строку в ORDER.
+  // Включение: 1) раскомментировать в SPEC; 2) в run() загрузить ряд и
+  //   parts.<n> = alignFFill(baseT, s, lim); 3) добавить чип src-<n> + строку в ORDER/RU.
 };
 const CFG = {
   GATE_THR: -8.0,
@@ -296,6 +342,28 @@ function parseYahoo(text) {   // v8 chart JSON -> {t, v} по adjclose
   }
   return {t, v};
 }
+// CBOE put/call архив: преамбула + строка заголовка с "…Ratio". Берём столбец ratio.
+function parsePcArchive(text) {
+  const lines = text.split("\n");
+  let hi = -1, di = 0, ri = -1;
+  for (let i = 0; i < Math.min(lines.length, 40); i++) {
+    const cells = lines[i].split(",").map(c => c.trim().toLowerCase());
+    const r = cells.findIndex(c => c.includes("ratio"));
+    if (r >= 0) {
+      const d = cells.findIndex(c => c.includes("date"));
+      hi = i; ri = r; di = d >= 0 ? d : 0; break;
+    }
+  }
+  if (hi < 0 || ri < 0) return {t: [], v: []};
+  const t = [], v = [];
+  for (let i = hi + 1; i < lines.length; i++) {
+    const p = lines[i].split(",");
+    if (p.length <= ri) continue;
+    const d = new Date(p[di]); const x = parseFloat(p[ri]);
+    if (!isNaN(d) && isFinite(x) && x > 0) { t.push(d); v.push(x); }
+  }
+  return sortDedup(t, v);
+}
 // FRED fredgraph.csv: <date>,<value> ; заголовок в строке 0; пропуски = "."
 function parseFred(text) {
   const t = [], v = [];
@@ -355,6 +423,43 @@ async function loadNaaimInner(log) {
   log("✗ NAAIM не загрузился");
   return null;
 }
+// ---- AAII (xls): bull-bear спред ----
+async function loadAaiiInner(log) {
+  srcStatus("aaii", "loading", "поиск xls…");
+  if (typeof XLSX === "undefined") { log("✗ AAII: библиотека xlsx не загрузилась"); return null; }
+  const urls = ["https://www.aaii.com/files/surveys/sentiment.xls"];
+  for (const u of urls) {
+    const buf = await fetchBuf(u);
+    if (!buf) continue;
+    try {
+      const wb = XLSX.read(buf, {type: "array", cellDates: true});
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
+      let hi = -1;
+      for (let i = 0; i < Math.min(rows.length, 12); i++) {
+        const cells = (rows[i] || []).map(c => String(c).trim().toLowerCase());
+        if (cells.some(c => c.includes("bullish")) && cells.some(c => c.includes("bearish"))) { hi = i; break; }
+      }
+      if (hi < 0) continue;
+      const head = rows[hi].map(c => String(c).trim().toLowerCase());
+      const di = head.findIndex(c => c.includes("date"));
+      const bi = head.findIndex(c => c.includes("bullish"));
+      const ri = head.findIndex(c => c.includes("bearish"));
+      if (di < 0 || bi < 0 || ri < 0) continue;
+      const t = [], v = [];
+      for (const r of rows.slice(hi + 1)) {
+        const d = r[di] instanceof Date ? r[di] : new Date(r[di]);
+        const bull = parseFloat(r[bi]); const bear = parseFloat(r[ri]);
+        if (!isNaN(d) && isFinite(bull) && isFinite(bear)) { t.push(d); v.push(bull - bear); }
+      }
+      if (t.length < 300) continue;
+      const s = sortDedup(t, v);
+      log("✓ AAII (" + s.t.length + " недель)");
+      return s;
+    } catch (e) { /* next */ }
+  }
+  log("✗ AAII не загрузился — розничный канал неактивен");
+  return null;
+}
 function raceBudget(fn, log, ms) {
   return Promise.race([
     fn(log).catch(e => { log("✗ " + e.message); return null; }),
@@ -364,6 +469,162 @@ function raceBudget(fn, log, ms) {
 const fresh = s => s && s.t.length > 500 &&
   (Date.now() - +s.t[s.t.length-1]) < 45*864e5;
 
+// ================= АНАЛИТИКА (детерминированная, без внешних вызовов) =================
+// Разбор по компонентам + синтез заключения. Всё вычисляется из уже посчитанных
+// ranks/comp/gate/latch — никакого ИИ-запроса со страницы (это потребовало бы
+// светить API-ключ в браузере, поэтому логика — явные пороговые правила).
+
+function classifyRank(rv, orThr) {
+  if (!isFinite(rv)) return {label: "н/д", tone: "dead"};
+  if (rv <= orThr) return {label: "экстремум страха", tone: "tone-fear"};
+  if (rv <= -4)     return {label: "стресс",           tone: "tone-stress"};
+  if (rv <  4)      return {label: "нейтрально",       tone: "tone-neutral"};
+  if (rv <  8)      return {label: "спокойствие",      tone: "tone-calm"};
+  return               {label: "жадность",          tone: "tone-greed"};
+}
+function trendArrow(delta) {
+  if (!isFinite(delta)) return {arrow: "·", cls: "arrow-flat"};
+  if (delta <= -0.3) return {arrow: "↓", cls: "arrow-down"};
+  if (delta >=  0.3) return {arrow: "↑", cls: "arrow-up"};
+  return {arrow: "→", cls: "arrow-flat"};
+}
+const fmt1 = x => isFinite(x) ? (x > 0 ? "+" : "") + x.toFixed(1) : "н/д";
+
+function renderAnalysis(ranks, comp, gate, latch, last, baseT, RU, ORDER) {
+  const gridEl = document.getElementById("an-grid");
+  const narEl  = document.getElementById("an-narrative");
+  gridEl.innerHTML = ""; narEl.innerHTML = "";
+
+  const present = ORDER.filter(n => n in ranks);
+  if (present.length === 0) {
+    narEl.innerHTML = "<p>Недостаточно живых источников для разбора.</p>";
+    return;
+  }
+  const i5  = Math.max(0, last - 5);
+  const i20 = Math.max(0, last - 20);
+
+  const rows = present.map(n => {
+    const rv    = ranks[n][last];
+    const rv5   = ranks[n][i5];
+    const rv20  = ranks[n][i20];
+    const d5    = rv - rv5;
+    const d20   = rv - rv20;
+    const cls   = classifyRank(rv, CFG.OR_THR);
+    const t5    = trendArrow(d5);
+    const t20   = trendArrow(d20);
+    return {n, rv, d5, d20, cls, t5, t20};
+  });
+
+  for (const r of rows) {
+    const card = document.createElement("div");
+    card.className = "an-card";
+    card.innerHTML =
+      '<div class="an-name">' + RU[r.n] + '</div>' +
+      '<div class="an-val ' + r.cls.tone + '">' + fmt1(r.rv) +
+        '<span class="an-label">' + r.cls.label + '</span></div>' +
+      '<div class="an-trend">' +
+        '<span>5дн <b class="' + r.t5.cls + '">' + r.t5.arrow + ' ' + fmt1(r.d5) + '</b></span>' +
+        '<span>20дн <b class="' + r.t20.cls + '">' + r.t20.arrow + ' ' + fmt1(r.d20) + '</b></span>' +
+      '</div>';
+    gridEl.appendChild(card);
+  }
+
+  const byVal = rows.slice().sort((a, b) => a.rv - b.rv);
+  const driver = byVal[0];
+  const laggard = byVal[byVal.length - 1];
+  const spread = laggard.rv - driver.rv;
+
+  const cv   = comp[last];
+  const cv5  = comp[i5];
+  const cv20 = comp[i20];
+  const dC5  = cv - cv5;
+  const dC20 = cv - cv20;
+  const tC20 = trendArrow(dC20);
+
+  const paras = [];
+
+  paras.push(
+    '<p><b>' + RU[driver.n] + '</b> вносит наибольший вклад в текущее состояние: ' +
+    '<span class="mono ' + driver.cls.tone + '">' + fmt1(driver.rv) + '</span> (' + driver.cls.label + '). ' +
+    'За 20 торговых дней канал ' + (driver.d20 <= -0.3 ? 'ухудшился' : driver.d20 >= 0.3 ? 'улучшился' : 'почти не изменился') +
+    ' на <span class="mono">' + fmt1(driver.d20) + '</span>.</p>'
+  );
+
+  if (present.length > 1) {
+    const spreadNote = spread >= 6
+      ? 'стресс сосредоточен в одном канале, а не распределён по рынку — типичная картина для OR-триггера, а не для широкой капитуляции.'
+      : spread >= 3
+      ? 'умеренное расхождение, компоненты движутся не строго синхронно.'
+      : 'компоненты движутся согласованно, узкий разброс.';
+    paras.push(
+      '<p>На другом полюсе — <b>' + RU[laggard.n] + '</b> на <span class="mono ' + laggard.cls.tone + '">' +
+      fmt1(laggard.rv) + '</span> (' + laggard.cls.label + '). Разброс между каналами — ' +
+      '<span class="mono">' + spread.toFixed(1) + '</span> пункта: ' + spreadNote + '</p>'
+    );
+  }
+
+  paras.push(
+    '<p>Композит: 5дн <b class="' + trendArrow(dC5).cls + '">' + trendArrow(dC5).arrow + ' ' + fmt1(dC5) +
+    '</b>, 20дн <b class="' + tC20.cls + '">' + tC20.arrow + ' ' + fmt1(dC20) + '</b>. ' +
+    (dC20 <= -1 ? 'Индикатор смещается в сторону страха.' :
+     dC20 >=  1 ? 'Индикатор смещается в сторону спокойствия/жадности.' :
+     'Заметного тренда за последний месяц нет.') + '</p>'
+  );
+
+  if (!gate[last]) {
+    const gapGate = cv - CFG.GATE_THR;
+    const orGaps = rows.filter(r => r.rv > CFG.OR_THR).map(r => ({n: r.n, gap: r.rv - CFG.OR_THR}));
+    const nearestOR = orGaps.length ? orGaps.reduce((a, b) => a.gap < b.gap ? a : b) : null;
+    let distText;
+    if (nearestOR && nearestOR.gap <= 3) {
+      distText = 'Ближе всего к одиночному OR-триггеру — <b>' + RU[nearestOR.n] + '</b>: до порога ' +
+        CFG.OR_THR + ' осталось <span class="mono">' + nearestOR.gap.toFixed(1) + '</span> пункта.';
+    } else if (gapGate <= 4) {
+      distText = 'До композитного гейта (≤' + CFG.GATE_THR + ') остаётся <span class="mono">' +
+        gapGate.toFixed(1) + '</span> пункта.';
+    } else {
+      const minGap = nearestOR ? Math.min(gapGate, nearestOR.gap) : gapGate;
+      distText = 'До ближайшего триггера — <span class="mono">' + minGap.toFixed(1) +
+        '</span> пункта; состояние далеко от порогов капитуляции.';
+    }
+    paras.push('<p>' + distText + '</p>');
+  }
+
+  narEl.innerHTML = paras.join("");
+
+  let verdictText, verdictTone = "";
+  if (gate[last]) {
+    const hits = rows.filter(r => r.rv <= CFG.OR_THR).map(r => RU[r.n]);
+    const trigger = hits.length ? hits.join(", ") : "композитный гейт";
+    verdictText = "Заключение: капитуляционный триггер подтверждён сегодня (" + trigger +
+      "). Это контекст для системы траншей — решение остаётся за основной стратегией.";
+    verdictTone = "tone-fear";
+  } else if (latch[last]) {
+    let gi = last; while (!gate[gi]) gi--;
+    verdictText = "Заключение: капитуляция была " + (last - gi) + " торг. дн. назад (" +
+      baseT[gi].toISOString().slice(0,10) + ") и остаётся в окне памяти. Новых триггеров сегодня нет.";
+    verdictTone = "tone-stress";
+  } else if (dC20 <= -1.5) {
+    verdictText = "Заключение: нарастающий стресс без подтверждённой капитуляции. Следить за " +
+      RU[driver.n] + ".";
+    verdictTone = "tone-stress";
+  } else if (dC20 >= 1.5) {
+    verdictText = "Заключение: настроения восстанавливаются, индикатор удаляется от зоны стресса.";
+  } else {
+    verdictText = "Заключение: нейтральный, стабильный режим — выраженных перекосов нет.";
+  }
+  const verdictEl = document.createElement("div");
+  verdictEl.className = "an-verdict" + (verdictTone ? " " + verdictTone : "");
+  verdictEl.textContent = verdictText;
+  narEl.appendChild(verdictEl);
+
+  const antiEl = document.createElement("div");
+  antiEl.className = "an-antirule";
+  antiEl.textContent = "Индикатор — контекст, не торговый сигнал. Красная зона на шкале (жадность) " +
+    "и зелёная (капитуляция) не означают автоматическое действие; решение принимает основная система.";
+  narEl.appendChild(antiEl);
+}
+
 // ================= ПАЙПЛАЙН =================
 async function run() {
   const logEl = document.getElementById("log");
@@ -372,10 +633,10 @@ async function run() {
   const st = document.getElementById("status");
   st.className = "";
   st.innerHTML = "Загрузка данных…<small>состояние источников — на панели ниже</small>";
-  const CHIPS = ["vix", "vix3m", "naaim", "hyoas"];
+  const CHIPS = ["vix", "vix3m", "naaim", "credit", "pc_eq", "pc_tot", "aaii"];
   for (const s of CHIPS) srcStatus(s, "loading", "ожидание…");
 
-  log("→ запрашиваю VIX, VIX3M, HY OAS, NAAIM…");
+  log("→ запрашиваю VIX, VIX3M, Credit, put/call, NAAIM, AAII…");
   const safe = p => p.catch(e => { log("✗ " + e.message); return null; });
 
   async function loadIdx(name, yahooSym, srcId) {   // CBOE -> Yahoo
@@ -391,12 +652,20 @@ async function run() {
     const t = await fetchText("https://fred.stlouisfed.org/graph/fredgraph.csv?id=" + id, log, label, srcId);
     return t ? parseFred(t) : null;
   }
+  async function loadPc(kind, srcId) {   // CBOE CDN put/call архив
+    const t = await fetchText("https://cdn.cboe.com/resources/options/volume_and_call_put_ratios/" +
+                              kind + "pcarchive.csv", log, kind + " P/C (CBOE)", srcId);
+    return t ? parsePcArchive(t) : null;
+  }
 
   // ПОСЛЕДОВАТЕЛЬНАЯ загрузка (публичные прокси режут параллельные залпы)
-  let vix   = await safe(loadIdx("VIX", "%5EVIX", "vix"));
-  let v3m   = await safe(loadIdx("VIX3M", "%5EVIX3M", "vix3m"));
-  let hyoas = await safe(loadFred("BAMLH0A0HYM2", "HY OAS (FRED)", "hyoas"));
-  let naaim = await safe(raceBudget(loadNaaimInner, log, 45000));
+  let vix    = await safe(loadIdx("VIX", "%5EVIX", "vix"));
+  let v3m    = await safe(loadIdx("VIX3M", "%5EVIX3M", "vix3m"));
+  let credit = await safe(loadFred("BAA10Y", "Credit Baa−10Y (FRED)", "credit"));
+  let pcEq   = await safe(loadPc("equity", "pc_eq"));
+  let pcTot  = await safe(loadPc("total", "pc_tot"));
+  let naaim  = await safe(raceBudget(loadNaaimInner, log, 45000));
+  let aaii   = await safe(raceBudget(loadAaiiInner, log, 45000));
 
   // второй круг только для критичных VIX/VIX3M
   if (!fresh(vix) || !fresh(v3m)) {
@@ -406,12 +675,15 @@ async function run() {
     if (!fresh(v3m)) v3m = await safe(loadIdx("VIX3M", "%5EVIX3M", "vix3m"));
   }
 
-  // финализация чипов
+  // финализация чипов — семь источников, каждый честно зелёный/красный
   const iso = s => s.t[s.t.length-1].toISOString().slice(0, 10);
-  srcStatus("vix",   fresh(vix)  ? "ok" : "fail", fresh(vix)  ? "по " + iso(vix)  : "не загрузился");
-  srcStatus("vix3m", fresh(v3m)  ? "ok" : "fail", fresh(v3m)  ? "по " + iso(v3m)  : "неактивен");
-  srcStatus("naaim", fresh(naaim)? "ok" : "fail", fresh(naaim)? naaim.t.length + " недель" : "неактивен");
-  srcStatus("hyoas", fresh(hyoas)? "ok" : "fail", fresh(hyoas)? "по " + iso(hyoas): "неактивен");
+  srcStatus("vix",    fresh(vix)    ? "ok" : "fail", fresh(vix)    ? "по " + iso(vix)    : "не загрузился");
+  srcStatus("vix3m",  fresh(v3m)    ? "ok" : "fail", fresh(v3m)    ? "по " + iso(v3m)    : "неактивен");
+  srcStatus("naaim",  fresh(naaim)  ? "ok" : "fail", fresh(naaim)  ? naaim.t.length + " недель" : "неактивен");
+  srcStatus("credit", fresh(credit) ? "ok" : "fail", fresh(credit) ? "по " + iso(credit) : "неактивен");
+  srcStatus("pc_eq",  fresh(pcEq)   ? "ok" : "fail", fresh(pcEq)   ? "по " + iso(pcEq)   : "архив неактуален");
+  srcStatus("pc_tot", fresh(pcTot)  ? "ok" : "fail", fresh(pcTot)  ? "по " + iso(pcTot)  : "архив неактуален");
+  srcStatus("aaii",   fresh(aaii)   ? "ok" : "fail", fresh(aaii)   ? aaii.t.length + " недель" : "неактивен");
 
   if (!fresh(vix)) {
     st.innerHTML = "VIX не загрузился — прибор не может работать." +
@@ -425,11 +697,14 @@ async function run() {
     const a3 = alignFFill(baseT, v3m, 3);
     parts.vix_ts = vix.v.map((x, i) => (isFinite(a3[i]) ? x / a3[i] : NaN));
   } else log("✗ vix_ts неактивен — flash-детектор выключен");
-  if (fresh(naaim)) parts.naaim  = alignFFill(baseT, naaim, 7);
-  if (fresh(hyoas)) parts.hy_oas = alignFFill(baseT, hyoas, 5);
+  if (fresh(naaim))  parts.naaim     = alignFFill(baseT, naaim, 7);
+  if (fresh(credit)) parts.credit    = alignFFill(baseT, credit, 5);
+  if (fresh(pcEq))   parts.pc_equity = alignFFill(baseT, pcEq, 3);
+  if (fresh(pcTot))  parts.pc_total  = alignFFill(baseT, pcTot, 3);
+  if (fresh(aaii))   parts.aaii      = alignFFill(baseT, aaii, 7);
 
   log("→ считаю каузальные ранги (" + baseT.length + " дней, компонент: " +
-      Object.keys(parts).length + ")…");
+      Object.keys(parts).length + " из 7)…");
   await new Promise(r => setTimeout(r, 30));
   const names = Object.keys(parts);
   const ranks = {};
@@ -462,20 +737,20 @@ async function run() {
   // шкала
   const y = v => 215 - v * 19.5;
   let svg = '<rect x="82" y="' + y(10) + '" width="26" height="' + (y(-10)-y(10)) +
-            '" fill="#1E2A3A" stroke="#2C3A4C"/>' +
+            '" fill="#F0F2F5" stroke="#DFE3E8"/>' +
             '<rect x="82" y="' + y(CFG.GATE_THR) + '" width="26" height="' +
-            (y(-10)-y(CFG.GATE_THR)) + '" fill="#0C3A2A"/>' +
+            (y(-10)-y(CFG.GATE_THR)) + '" fill="#E4F7EF"/>' +
             '<rect x="82" y="' + y(10) + '" width="26" height="' + (y(8)-y(10)) +
-            '" fill="#3A1512"/>';
+            '" fill="#FBE7E6"/>';
   for (let v = -10; v <= 10; v += 2) {
-    svg += '<line x1="70" x2="82" y1="' + y(v) + '" y2="' + y(v) + '" stroke="#5A6B78"/>' +
+    svg += '<line x1="70" x2="82" y1="' + y(v) + '" y2="' + y(v) + '" stroke="#B7C0C9"/>' +
            '<text x="64" y="' + (y(v)+4) + '" text-anchor="end" font-size="13" ' +
-           'font-family="PT Mono" fill="#8FA3B8">' + (v>0?"+"+v:v) + '</text>';
+           'font-family="PT Mono" fill="#5C6B7A">' + (v>0?"+"+v:v) + '</text>';
   }
-  svg += '<text x="122" y="' + y(-9) + '" font-size="14" font-weight="bold" fill="#1FE38F">пик</text>';
+  svg += '<text x="122" y="' + y(-9) + '" font-size="14" font-weight="bold" fill="#0A7A56">пик</text>';
   const cv = comp[last];
   if (isFinite(cv)) {
-    const col = cv <= CFG.GATE_THR ? "#1FE38F" : cv <= -4 ? "#FFB020" : cv >= 8 ? "#FF5A4D" : "#EAF2FB";
+    const col = cv <= CFG.GATE_THR ? "#0A7A56" : cv <= -4 ? "#8F5A09" : cv >= 8 ? "#D6362F" : "#16212C";
     svg += '<polygon points="110,' + y(cv) + ' 128,' + (y(cv)-9) + ' 128,' + (y(cv)+9) +
            '" fill="' + col + '"/><text x="136" y="' + (y(cv)+6) +
            '" font-size="22" font-weight="bold" font-family="PT Mono" fill="' + col + '">' +
@@ -483,11 +758,12 @@ async function run() {
   }
   document.getElementById("gauge").innerHTML = svg;
 
-  // компоненты
+  // компоненты — все семь, недоступные помечены явно
   const compDiv = document.getElementById("components");
   compDiv.innerHTML = "";
-  const RU = {vix: "VIX", vix_ts: "VIX/VIX3M", naaim: "NAAIM", hy_oas: "HY OAS"};
-  const ORDER = ["vix", "vix_ts", "naaim", "hy_oas"];
+  const RU = {vix: "VIX", vix_ts: "VIX/VIX3M", naaim: "NAAIM", credit: "Baa−10Y",
+             pc_equity: "P/C equity", pc_total: "P/C total", aaii: "AAII"};
+  const ORDER = ["vix", "vix_ts", "naaim", "credit", "pc_equity", "pc_total", "aaii"];
   for (const n of ORDER) {
     const row = document.createElement("div");
     row.className = "comp-row";
@@ -506,6 +782,8 @@ async function run() {
     }
     compDiv.appendChild(row);
   }
+
+  renderAnalysis(ranks, comp, gate, latch, last, baseT, RU, ORDER);
 
   log("готово");
 }

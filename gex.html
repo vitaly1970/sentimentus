@@ -357,44 +357,79 @@ async function run() {
   log("готово: " + R.nOptions + " опционов в расчёте");
 }
 
-function nearestAbove(levels, spot){
-  const a = levels.filter(l => l.strike > spot).sort((x,y) => x.strike - y.strike);
-  return a.length ? a[0] : null;
-}
-function nearestBelow(levels, spot){
-  const b = levels.filter(l => l.strike < spot).sort((x,y) => y.strike - x.strike);
-  return b.length ? b[0] : null;
-}
+function sortedAbove(levels, spot){ return levels.filter(l => l.strike > spot).sort((a,b) => a.strike - b.strike); }
+function sortedBelow(levels, spot){ return levels.filter(l => l.strike < spot).sort((a,b) => b.strike - a.strike); }
+
 function analysisHTML(sym, R){
   const green = R.regime === "green";
   const flip = R.flip != null ? "$" + R.flip.toFixed(0) : "—";
   const em0 = R.byExpiry.length ? R.byExpiry[0].expMove : null;
   const emTxt = em0 != null ? ("±$" + em0.toFixed(0)) : "—";
-  const cUp = nearestAbove(R.callLevels, R.spot);
-  const pDn = nearestBelow(R.putLevels, R.spot);
+  const bufTxt = em0 != null ? ("$" + Math.max(1, Math.round(em0 * 0.25))) : "небольшим отступом";
+
+  const cAbove = sortedAbove(R.callLevels, R.spot);
+  const pBelow = sortedBelow(R.putLevels, R.spot);
+  const cUp = cAbove[0] || null, cUp2 = cAbove[1] || null;
+  const pDn = pBelow[0] || null, pDn2 = pBelow[1] || null;
   const cTxt = cUp ? "$" + cUp.strike.toFixed(0) : "—";
+  const c2Txt = cUp2 ? "$" + cUp2.strike.toFixed(0) : null;
   const pTxt = pDn ? "$" + pDn.strike.toFixed(0) : "—";
+  const p2Txt = pDn2 ? "$" + pDn2.strike.toFixed(0) : null;
+
+  const allLvls = [...R.callLevels.map(l => ({...l, tag: "C"})), ...R.putLevels.map(l => ({...l, tag: "P"}))];
+  const strongest = allLvls.reduce((m, l) => (!m || Math.abs(l.gex) > Math.abs(m.gex)) ? l : m, null);
+  const strongTxt = strongest ? "$" + strongest.strike.toFixed(0) : null;
+  const strongIsNear = strongest && cUp && pDn &&
+    (Math.abs(strongest.strike - cUp.strike) < 0.5 || Math.abs(strongest.strike - pDn.strike) < 0.5);
 
   const cushion = (R.netEx0 < 0 && R.netGex > 0)
     ? " <b>Важно:</b> вся текущая зелёная гамма держится на сегодняшней 0DTE — после её экспирации подушка уходит, к завтрашнему дню режим может стать красным."
     : "";
+  const thin = Math.abs(R.dist) < 0.75;
+  const thinNote = thin
+    ? " Спот всего в <b>" + Math.abs(R.dist).toFixed(2) + "%</b> от флипа — режим может перевернуться внутри самой сессии; при приближении к " + flip + " это первый сигнал менять план, не дожидаясь остальных уровней."
+    : "";
 
-  let mean, forecast, tactic;
+  let mean, forecast, scenario, strategy, invalid;
   if (green){
     mean = "Дилеры в <b>длинной гамме</b> — они гасят колебания: рост подхватывают продажами, провалы выкупают. Рынок склонён «прилипать» к магнитам-сопротивлениям и торговать в диапазоне, всплески волатильности затухают." + cushion;
+
     forecast = "Ожидаемый диапазон на сегодня <b>" + emTxt + "</b> (по волатильности ближней экспирации). Пока цена <b>выше флипа " + flip + "</b> — режим «прилипания»: движения тухнут, края диапазона тянет к центру. Ближайший потолок сверху <b>" + cTxt + "</b>, пол снизу <b>" + pTxt + "</b>.";
-    tactic = "Работают возвраты к магнитам и мин-реверсии от краёв (у сопротивлений — продавцы, у поддержек — покупатели). Главный триггер смены — пробой <b>флипа " + flip + " вниз</b>: это переключит рынок в красный режим, где движения начнут усиливаться.";
+
+    scenario = "Базовый сценарий: цена весь день ходит в коридоре между <b>" + pTxt + "</b> и <b>" + cTxt + "</b>" +
+      (strongest && !strongIsNear ? ", с тяготением к самому сильному магниту всей цепочки — <b>" + strongTxt + "</b> (" + strongest.tag + (allLvls.indexOf(strongest)+1) + ")" : "") +
+      ". Резкие выбросы за пределы коридора обычно быстро откупаются/распродаются обратно к центру." + thinNote;
+
+    strategy = "<b>У сопротивления " + cTxt + "</b> — рабочая идея на разворот вниз: короткая позиция от уровня, стоп за ним примерно на " + bufTxt +
+      (c2Txt ? ", цель — возврат к центру диапазона или к поддержке " + pTxt + " (следующее сопротивление, если пробьёт — " + c2Txt + ")" : "") + ". " +
+      "<b>У поддержки " + pTxt + "</b> — зеркально: покупка от уровня, стоп за ним на " + bufTxt +
+      (p2Txt ? ", цель — центр диапазона или сопротивление " + cTxt + " (следующая поддержка при пробое — " + p2Txt + ")" : "") + ". " +
+      "Пока режим зелёный, фейды от краёв статистически сильнее пробойных сделок — входить по пробою уровня здесь менее выгодно, чем по возврату.";
+
+    invalid = "План перестаёт работать при закрытии <b>ниже флипа " + flip + "</b> (особенно на объёме) — это переключит режим в красный: развороты у уровней перестанут отрабатывать, а пробои начнут ускоряться вместо возврата. В этот момент стоит закрыть фейд-позиции, а не усреднять против движения.";
+
   } else {
     mean = "Дилеры в <b>короткой гамме</b> — они усиливают движение: рост докупают, падение допродают. Импульсы и тренды разгоняются, откаты резче, путы-поддержки держат хуже, чем в спокойном режиме." + cushion;
-    forecast = "Ожидаемый диапазон на сегодня <b>" + emTxt + "</b>, но в короткой гамме реальный ход бывает шире. Пока цена <b>ниже флипа " + flip + "</b> — склонность к расширению и импульсам. Ближайшее сопротивление сверху <b>" + cTxt + "</b>, поддержка снизу <b>" + pTxt + "</b>.";
-    tactic = "Импульсы склонны продолжаться, пробои ускоряются — осторожнее с покупкой отскоков и ловлей ножей; уход под поддержку <b>" + pTxt + "</b> может доускоряться. Ключевой сигнал разворота режима — возврат <b>выше флипа " + flip + "</b>: тогда дилеры снова начнут гасить волатильность.";
+
+    forecast = "Ожидаемый диапазон на сегодня <b>" + emTxt + "</b>, но в короткой гамме реальный ход часто шире расчётного. Пока цена <b>ниже флипа " + flip + "</b> — склонность к расширению и импульсам. Ближайшее сопротивление сверху <b>" + cTxt + "</b>, поддержка снизу <b>" + pTxt + "</b>.";
+
+    scenario = "Базовый сценарий: движения, однажды начавшись, склонны продолжаться, а не разворачиваться на уровнях. Пробой <b>" + cTxt + "</b> вверх может доехать до " + (c2Txt || "следующего сопротивления") +
+      " без остановки; уход ниже <b>" + pTxt + "</b> — до " + (p2Txt || "следующей поддержки") + " тем же образом." + thinNote;
+
+    strategy = "Здесь работают <b>продолжения, а не развороты</b>. Закрепление выше <b>" + cTxt + "</b> (не фитиль, а именно закрытие свечи за уровнем) — идея на лонг по факту пробоя, стоп под уровнем на " + bufTxt +
+      (c2Txt ? ", цель — " + c2Txt : "") + ". Закрепление ниже <b>" + pTxt + "</b> — идея на шорт по факту пробоя, стоп над уровнем на " + bufTxt +
+      (p2Txt ? ", цель — " + p2Txt : "") + ". Покупать отскок от поддержки или продавать прокол сопротивления здесь статистически невыгодно — дилеры дохеджируют движение против таких сделок, а не гасят его. Стопы стоит держать шире обычного, размер позиции — меньше: волатильность в этом режиме объективно выше.";
+
+    invalid = "План перестаёт работать при возврате <b>выше флипа " + flip + "</b> — режим переключится в зелёный: пробои перестанут доезжать, эффективнее станут развороты/фейды у краёв диапазона вместо следования за трендом. В этот момент стоит закрыть трендовые позиции, а не держать их до цели.";
   }
 
   return "<h2>Что показывает картина · " + sym + " $" + R.spot.toFixed(2) + "</h2>" +
     "<div class='ana-part'><div class='ana-lbl'>Что это значит</div><div class='ana-txt'>" + mean + "</div></div>" +
     "<div class='ana-part'><div class='ana-lbl'>Прогноз на сегодня · дневной GEX</div><div class='ana-txt'>" + forecast + "</div></div>" +
-    "<div class='ana-part'><div class='ana-lbl'>Тактика</div><div class='ana-txt'>" + tactic + "</div></div>" +
-    "<div class='ana-part'><div class='ana-txt' style='font-size:12px;color:var(--ink2)'>Карта дилерского позиционирования на день (OI обновляется раз в сутки). Аналитика, не сигнал к сделке.</div></div>";
+    "<div class='ana-part'><div class='ana-lbl'>Сценарий дня</div><div class='ana-txt'>" + scenario + "</div></div>" +
+    "<div class='ana-part'><div class='ana-lbl'>Стратегия на сегодня</div><div class='ana-txt'>" + strategy + "</div></div>" +
+    "<div class='ana-part'><div class='ana-lbl'>Что отменяет этот сценарий</div><div class='ana-txt'>" + invalid + "</div></div>" +
+    "<div class='ana-part'><div class='ana-txt' style='font-size:12px;color:var(--ink2)'>Карта дилерского позиционирования на день (OI обновляется раз в сутки). Аналитика на основе структуры опционов, не индивидуальная инвестиционная рекомендация — решение и риск всегда за вами.</div></div>";
 }
 
 function render(sym, R, log) {

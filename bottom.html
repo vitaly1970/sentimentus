@@ -12,6 +12,7 @@
 --green:#0E9F6E;--green-bg:#E4F7EF;--green-line:#0E9F6E;--green-ink:#0A7A56;
 --red:#D6362F;--red-bg:#FBE7E6;
 --amber:#C2760C;--amber-bg:#FBF0DC;--amber-ink:#8F5A09;
+--marker:#2452D9;
 --fear:#D6362F;--greed:#0E9F6E}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--ink);font-family:'PT Sans',sans-serif;padding:22px;max-width:1060px;margin:0 auto}
@@ -27,11 +28,15 @@ h1{font-size:24px;font-weight:700}
 button{font-family:inherit;font-size:15px;padding:7px 18px;border:1px solid var(--green);background:transparent;color:var(--green);cursor:pointer;border-radius:4px;font-weight:700;transition:background .15s,color .15s}
 button:hover{background:var(--green);color:#FFFFFF}
 button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
-.grid{display:grid;grid-template-columns:230px 1fr;gap:18px}
+.grid{display:grid;grid-template-columns:230px 1fr;gap:18px;align-items:stretch}
 @media(max-width:760px){.grid{grid-template-columns:1fr}}
+.grid>.panel{display:flex;flex-direction:column}
+.grid>.panel>svg{margin:0 auto}
 .rightcol{display:flex;flex-direction:column;gap:18px;justify-content:flex-start}
+.rightcol .panel{flex:1;display:flex;flex-direction:column}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px}
 .panel h2{font-size:13px;text-transform:uppercase;letter-spacing:1.4px;color:var(--ink2);margin-bottom:12px;font-weight:700}
+.panel h2.center{text-align:center}
 .panel h2 .h2-sub{text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink2);opacity:.75}
 #status{padding:20px 22px;font-size:26px;font-weight:700;border-radius:10px;margin-bottom:18px;border:2px solid var(--line);background:var(--panel);letter-spacing:.3px}
 #status.green{background:var(--green-bg);border-color:var(--green-line);color:var(--green-ink)}
@@ -40,20 +45,22 @@ button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 .comp-row{display:grid;grid-template-columns:120px 1fr 92px;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:17px;font-weight:700}
 .comp-row:last-child{border-bottom:none}
 .bar{height:14px;background:linear-gradient(90deg,#D6362F 0%,#C2760C 30%,#DFE3E8 50%,#3FAE84 70%,#0E9F6E 100%);border:1px solid var(--line);position:relative;border-radius:7px}
-.bar .tick{position:absolute;top:-4px;width:4px;height:22px;background:#16212C;border-radius:2px;box-shadow:0 0 0 2px #fff}
+.bar .tick{position:absolute;top:-5px;width:6px;height:24px;background:var(--marker);border-radius:3px;box-shadow:0 0 0 2px #fff,0 1px 3px rgba(36,82,217,.5)}
 .bar .orline{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--green-ink);left:5%;opacity:.7}
 .val{text-align:right;font-size:14px}
 .val.extreme{color:var(--green-ink);font-weight:700}
 .dead{color:var(--ink2)}
 #log{display:none}
-#sources{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+#sources{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:18px}
+@media(max-width:900px){#sources{grid-template-columns:repeat(4,1fr)}}
+@media(max-width:560px){#sources{grid-template-columns:repeat(2,1fr)}}
 .src{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);
-     border-radius:3px;padding:8px 14px;font-size:15px;min-width:150px}
+     border-radius:6px;padding:8px 10px;font-size:13.5px}
 .src .dot{width:11px;height:11px;border-radius:50%;background:var(--ink2);flex:none}
 .src.loading .dot{background:var(--amber);animation:pulse 1s infinite}
 .src.ok .dot{background:var(--green-line);animation:none;box-shadow:0 0 6px rgba(14,159,110,.5)}
 .src.fail .dot{background:var(--red);animation:none;box-shadow:0 0 6px rgba(214,54,47,.5)}
-.src small{display:block;color:var(--ink2);font-size:13px;font-weight:400}
+.src small{display:block;color:var(--ink2);font-size:12px;font-weight:400}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
 
 /* ---- аналитика ---- */
@@ -66,21 +73,21 @@ button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 .an-card .an-label{font-size:13px;font-weight:400;color:var(--ink2)}
 .an-card .an-trend{margin-top:6px;font-size:13px;color:var(--ink2);display:flex;gap:14px;font-family:'PT Mono',monospace}
 .an-card .an-trend b{font-weight:700}
-.tone-fear{color:var(--green-ink)}
-.tone-stress{color:var(--amber-ink)}
+.tone-danger{color:var(--red)}
+.tone-warn{color:var(--amber-ink)}
 .tone-neutral{color:var(--ink)}
-.tone-calm{color:var(--ink2)}
-.tone-greed{color:var(--red)}
-.arrow-down{color:var(--green-ink)}
-.arrow-up{color:var(--red)}
+.tone-calm{color:var(--green-ink)}
+.arrow-down{color:var(--red)}
+.arrow-up{color:var(--green-ink)}
 .arrow-flat{color:var(--ink2)}
 .an-narrative{border-left:3px solid var(--line);padding-left:16px;display:flex;flex-direction:column;gap:10px}
 .an-narrative p{font-size:15px;line-height:1.55;color:var(--ink)}
 .an-narrative p .mono{color:var(--ink2)}
 .an-verdict{margin-top:4px;padding:14px 16px;border-radius:7px;background:var(--panel2);border:1px solid var(--line);
   font-size:15px;line-height:1.5;font-weight:700}
-.an-verdict.tone-fear{border-color:var(--green-line);background:var(--green-bg);color:var(--green-ink)}
-.an-verdict.tone-stress{border-color:var(--amber);background:var(--amber-bg);color:var(--amber-ink)}
+.an-verdict.tone-danger{border-color:var(--red);background:var(--red-bg);color:#A32A24}
+.an-verdict.tone-warn{border-color:var(--amber);background:var(--amber-bg);color:var(--amber-ink)}
+.an-verdict.tone-calm{border-color:var(--green-line);background:var(--green-bg);color:var(--green-ink)}
 .an-antirule{margin-top:12px;font-size:12.5px;color:var(--ink2);line-height:1.5;font-style:italic}
 </style>
 </head>
@@ -106,10 +113,10 @@ button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
   <div class="src" id="src-aaii"><span class="dot"></span><span>AAII<small id="src-aaii-d">ожидание</small></span></div>
 </div>
 <div class="grid">
-  <div class="panel"><h2>Композит</h2>
+  <div class="panel"><h2 class="center">ИНДИКАТОР</h2>
     <svg id="gauge" width="190" height="430" viewBox="0 0 190 430" role="img" aria-label="Шкала композита"></svg></div>
   <div class="rightcol">
-    <div class="panel"><h2>Компоненты (каузальный ранг, −10 страх … +10 жадность)</h2>
+    <div class="panel"><h2>Значения компонентов: −10 — страх … +10 — жадность</h2>
       <div id="components"></div></div>
   </div>
 </div>
@@ -473,15 +480,43 @@ const fresh = s => s && s.t.length > 500 &&
 // Разбор по компонентам + синтез заключения. Всё вычисляется из уже посчитанных
 // ranks/comp/gate/latch — никакого ИИ-запроса со страницы (это потребовало бы
 // светить API-ключ в браузере, поэтому логика — явные пороговые правила).
+//
+// Цветовая семантика ЭТОГО блока (сознательно отдельная от шкалы «Индикатор»):
+// красный = ухудшение условий/опасность, зелёный = улучшение/спокойствие.
+// На главной шкале «Индикатор» зелёное дно остаётся сигналом капитуляции —
+// это разные вопросы: там «где точка входа», здесь «как сейчас на рынке».
 
+// что структурно означает смещение каждого канала в сторону страха/жадности
+// (не «почему в мире», а «что именно происходит с этой метрикой» — это можно
+// обосновать определением показателя, не выдумывая внешние новостные причины)
+const MECH = {
+  vix:       {fear: "участники платят дороже за защиту от волатильности — спрос на страховку растёт",
+              greed: "премия за волатильность снижается, опционный рынок закладывает более спокойный сценарий"},
+  vix_ts:    {fear: "терм-структура волатильности уходит в бэквордацию — рынок закладывает больше риска на ближайший месяц, чем на дистанции; типичный след краткосрочной паники",
+              greed: "терм-структура нормализуется, краткосрочная премия относительно долгосрочной снижается"},
+  naaim:     {fear: "профессиональные управляющие снижают чистую экспозицию к рынку — уходят в защиту",
+              greed: "профессиональные управляющие наращивают чистую экспозицию к рынку"},
+  credit:    {fear: "спред Baa−10Y расширяется — инвесторы требуют более высокую премию за риск корпоративного дефолта",
+              greed: "спред Baa−10Y сужается — премия за кредитный риск снижается"},
+  pc_equity: {fear: "растёт объём пут-опционов относительно колл по отдельным акциям — трейдеры активнее хеджируются или спекулируют на падение",
+              greed: "спрос на пут-опционы по акциям снижается относительно колл"},
+  pc_total:  {fear: "совокупный put/call растёт — хедж-спрос через индексные опционы усиливается",
+              greed: "совокупный put/call снижается — хедж-спрос ослабевает"},
+  aaii:      {fear: "розничные инвесторы становятся более медвежьими, спред бык−медведь сужается или уходит в минус",
+              greed: "розничные инвесторы становятся более бычьими, спред бык−медведь растёт"},
+};
+
+// классификация под новую семантику: страх/стресс = опасность (красный),
+// спокойствие/жадность = улучшение (зелёный). Нейтральная зона — без цвета.
 function classifyRank(rv, orThr) {
   if (!isFinite(rv)) return {label: "н/д", tone: "dead"};
-  if (rv <= orThr) return {label: "экстремум страха", tone: "tone-fear"};
-  if (rv <= -4)     return {label: "стресс",           tone: "tone-stress"};
+  if (rv <= orThr) return {label: "экстремум страха", tone: "tone-danger"};
+  if (rv <= -4)     return {label: "стресс",           tone: "tone-danger"};
   if (rv <  4)      return {label: "нейтрально",       tone: "tone-neutral"};
   if (rv <  8)      return {label: "спокойствие",      tone: "tone-calm"};
-  return               {label: "жадность",          tone: "tone-greed"};
+  return               {label: "жадность",          tone: "tone-calm"};
 }
+// движение к страху (delta<0) = ухудшение = красный; к жадности = зелёный
 function trendArrow(delta) {
   if (!isFinite(delta)) return {arrow: "·", cls: "arrow-flat"};
   if (delta <= -0.3) return {arrow: "↓", cls: "arrow-down"};
@@ -530,8 +565,8 @@ function renderAnalysis(ranks, comp, gate, latch, last, baseT, RU, ORDER) {
   }
 
   const byVal = rows.slice().sort((a, b) => a.rv - b.rv);
-  const driver = byVal[0];
-  const laggard = byVal[byVal.length - 1];
+  const driver = byVal[0];                          // самый тревожный канал сейчас
+  const laggard = byVal[byVal.length - 1];           // самый спокойный канал
   const spread = laggard.rv - driver.rv;
 
   const cv   = comp[last];
@@ -542,50 +577,57 @@ function renderAnalysis(ranks, comp, gate, latch, last, baseT, RU, ORDER) {
   const tC20 = trendArrow(dC20);
 
   const paras = [];
+  const mech = n => MECH[n] || null;
 
-  paras.push(
-    '<p><b>' + RU[driver.n] + '</b> вносит наибольший вклад в текущее состояние: ' +
-    '<span class="mono ' + driver.cls.tone + '">' + fmt1(driver.rv) + '</span> (' + driver.cls.label + '). ' +
-    'За 20 торговых дней канал ' + (driver.d20 <= -0.3 ? 'ухудшился' : driver.d20 >= 0.3 ? 'улучшился' : 'почти не изменился') +
-    ' на <span class="mono">' + fmt1(driver.d20) + '</span>.</p>'
-  );
-
-  if (present.length > 1) {
-    const spreadNote = spread >= 6
-      ? 'стресс сосредоточен в одном канале, а не распределён по рынку — типичная картина для OR-триггера, а не для широкой капитуляции.'
-      : spread >= 3
-      ? 'умеренное расхождение, компоненты движутся не строго синхронно.'
-      : 'компоненты движутся согласованно, узкий разброс.';
+  // 1. что движет индикатором и что это структурно означает
+  {
+    const m = mech(driver.n);
+    const moveTxt = driver.d20 <= -0.3
+      ? (m ? m.fear : 'канал сместился в сторону страха')
+      : driver.d20 >= 0.3
+      ? (m ? m.greed : 'канал сместился в сторону спокойствия')
+      : (driver.rv <= 0 && m ? m.fear : m ? m.greed : 'без выраженной динамики');
     paras.push(
-      '<p>На другом полюсе — <b>' + RU[laggard.n] + '</b> на <span class="mono ' + laggard.cls.tone + '">' +
-      fmt1(laggard.rv) + '</span> (' + laggard.cls.label + '). Разброс между каналами — ' +
-      '<span class="mono">' + spread.toFixed(1) + '</span> пункта: ' + spreadNote + '</p>'
+      '<p><b>' + RU[driver.n] + '</b> — ведущий канал сейчас (' + driver.cls.label + '). ' +
+      moveTxt.charAt(0).toUpperCase() + moveTxt.slice(1) + '.</p>'
     );
   }
 
-  paras.push(
-    '<p>Композит: 5дн <b class="' + trendArrow(dC5).cls + '">' + trendArrow(dC5).arrow + ' ' + fmt1(dC5) +
-    '</b>, 20дн <b class="' + tC20.cls + '">' + tC20.arrow + ' ' + fmt1(dC20) + '</b>. ' +
-    (dC20 <= -1 ? 'Индикатор смещается в сторону страха.' :
-     dC20 >=  1 ? 'Индикатор смещается в сторону спокойствия/жадности.' :
-     'Заметного тренда за последний месяц нет.') + '</p>'
-  );
+  // 2. согласованность каналов — только если это меняет интерпретацию
+  if (present.length > 1 && spread >= 3) {
+    const note = driver.cls.tone !== "tone-danger"
+      ? 'Каналы расходятся, но ни один не в зоне явного стресса — разброс отражает разную скорость реакции показателей.'
+      : spread >= 6
+      ? 'Стресс сосредоточен в одном канале, а не распределён по рынку — это больше похоже на локальный OR-триггер, чем на широкую капитуляцию.'
+      : 'Часть каналов уже реагирует на стресс, часть пока спокойна.';
+    paras.push('<p>' + note + ' Спокойнее всего сейчас ' + RU[laggard.n] + '.</p>');
+  }
 
+  // 3. динамика композита — что это значит для условий на рынке
+  {
+    const trendTxt = dC20 <= -1
+      ? 'Рыночные условия ухудшаются второй месяц — давление нарастает.'
+      : dC20 >= 1
+      ? 'Рыночные условия улучшаются — напряжение спадает.'
+      : 'Заметной динамики за месяц нет, режим устойчивый.';
+    paras.push(
+      '<p>' + trendTxt + ' <span class="' + tC20.cls + '">' + tC20.arrow + '</span></p>'
+    );
+  }
+
+  // 4. дистанция до триггера — единственная цифра, которая реально нужна для действия
   if (!gate[last]) {
     const gapGate = cv - CFG.GATE_THR;
     const orGaps = rows.filter(r => r.rv > CFG.OR_THR).map(r => ({n: r.n, gap: r.rv - CFG.OR_THR}));
     const nearestOR = orGaps.length ? orGaps.reduce((a, b) => a.gap < b.gap ? a : b) : null;
     let distText;
     if (nearestOR && nearestOR.gap <= 3) {
-      distText = 'Ближе всего к одиночному OR-триггеру — <b>' + RU[nearestOR.n] + '</b>: до порога ' +
-        CFG.OR_THR + ' осталось <span class="mono">' + nearestOR.gap.toFixed(1) + '</span> пункта.';
+      distText = 'Ближе всего к триггеру — <b>' + RU[nearestOR.n] + '</b>: осталось <span class="mono">' +
+        nearestOR.gap.toFixed(1) + '</span> пункта.';
     } else if (gapGate <= 4) {
-      distText = 'До композитного гейта (≤' + CFG.GATE_THR + ') остаётся <span class="mono">' +
-        gapGate.toFixed(1) + '</span> пункта.';
+      distText = 'До композитного порога осталось <span class="mono">' + gapGate.toFixed(1) + '</span> пункта.';
     } else {
-      const minGap = nearestOR ? Math.min(gapGate, nearestOR.gap) : gapGate;
-      distText = 'До ближайшего триггера — <span class="mono">' + minGap.toFixed(1) +
-        '</span> пункта; состояние далеко от порогов капитуляции.';
+      distText = 'До ближайшего порога далеко — состояние не приближается к капитуляции.';
     }
     paras.push('<p>' + distText + '</p>');
   }
@@ -595,21 +637,22 @@ function renderAnalysis(ranks, comp, gate, latch, last, baseT, RU, ORDER) {
   let verdictText, verdictTone = "";
   if (gate[last]) {
     const hits = rows.filter(r => r.rv <= CFG.OR_THR).map(r => RU[r.n]);
-    const trigger = hits.length ? hits.join(", ") : "композитный гейт";
-    verdictText = "Заключение: капитуляционный триггер подтверждён сегодня (" + trigger +
+    const trigger = hits.length ? hits.join(", ") : "композитный порог";
+    verdictText = "Заключение: триггер капитуляции сработал сегодня (" + trigger +
       "). Это контекст для системы траншей — решение остаётся за основной стратегией.";
-    verdictTone = "tone-fear";
+    verdictTone = "tone-danger";
   } else if (latch[last]) {
     let gi = last; while (!gate[gi]) gi--;
-    verdictText = "Заключение: капитуляция была " + (last - gi) + " торг. дн. назад (" +
-      baseT[gi].toISOString().slice(0,10) + ") и остаётся в окне памяти. Новых триггеров сегодня нет.";
-    verdictTone = "tone-stress";
+    verdictText = "Заключение: пик капитуляции пройден " + (last - gi) + " торг. дн. назад (" +
+      baseT[gi].toISOString().slice(0,10) + "), окно памяти ещё открыто. Новых триггеров сегодня нет.";
+    verdictTone = "tone-warn";
   } else if (dC20 <= -1.5) {
-    verdictText = "Заключение: нарастающий стресс без подтверждённой капитуляции. Следить за " +
+    verdictText = "Заключение: условия ухудшаются, но порог капитуляции не пройден. Следить за " +
       RU[driver.n] + ".";
-    verdictTone = "tone-stress";
+    verdictTone = "tone-warn";
   } else if (dC20 >= 1.5) {
-    verdictText = "Заключение: настроения восстанавливаются, индикатор удаляется от зоны стресса.";
+    verdictText = "Заключение: условия улучшаются, индикатор удаляется от зоны стресса.";
+    verdictTone = "tone-calm";
   } else {
     verdictText = "Заключение: нейтральный, стабильный режим — выраженных перекосов нет.";
   }
@@ -620,8 +663,8 @@ function renderAnalysis(ranks, comp, gate, latch, last, baseT, RU, ORDER) {
 
   const antiEl = document.createElement("div");
   antiEl.className = "an-antirule";
-  antiEl.textContent = "Индикатор — контекст, не торговый сигнал. Красная зона на шкале (жадность) " +
-    "и зелёная (капитуляция) не означают автоматическое действие; решение принимает основная система.";
+  antiEl.textContent = "Индикатор — контекст, не торговый сигнал. Цвет здесь описывает состояние рынка, " +
+    "а не рекомендацию купить или продать; решение принимает основная система.";
   narEl.appendChild(antiEl);
 }
 
@@ -750,7 +793,7 @@ async function run() {
   svg += '<text x="122" y="' + y(-9) + '" font-size="14" font-weight="bold" fill="#0A7A56">пик</text>';
   const cv = comp[last];
   if (isFinite(cv)) {
-    const col = cv <= CFG.GATE_THR ? "#0A7A56" : cv <= -4 ? "#8F5A09" : cv >= 8 ? "#D6362F" : "#16212C";
+    const col = cv <= CFG.GATE_THR ? "#0A7A56" : cv <= -4 ? "#8F5A09" : cv >= 8 ? "#D6362F" : "#2452D9";
     svg += '<polygon points="110,' + y(cv) + ' 128,' + (y(cv)-9) + ' 128,' + (y(cv)+9) +
            '" fill="' + col + '"/><text x="136" y="' + (y(cv)+6) +
            '" font-size="22" font-weight="bold" font-family="PT Mono" fill="' + col + '">' +

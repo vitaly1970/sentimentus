@@ -292,48 +292,95 @@ function scard(v){
     `</div>`;
 }
 
-/* ---- МАШИНА ЯДРА (авто-фаза; недельные закрытия QQQ) ----
-   Заменяет ручные селекторы «фаза / лестница / QDTE». Страница только сигналит —
-   исполнение и журнал сделок остаются за пользователем.
+/* ---- МАШИНА ЯДРА ----
+   Страница только сигналит — исполнение и журнал сделок остаются за пользователем.
    Пороги от ATH: EXIT −11,2% (выход/выключение модуля), T1 −20,6%, T2 −29,5%,
    T3 −41,5% (лестница TQQQ); BEAR −20,0% (полный выход QDTE).
-   Возврат — по фильтру ADX>25/CHOP<45 на уровне ТЕКУЩЕЙ фазы (закрытие выше него) —
-   разовый «возврат остатка» для TQQQ, два транша для QDTE (см. хендофф-записку). */
-const CORE={EXIT:-0.112,T1:-0.206,T2:-0.295,T3:-0.415,BEAR:-0.20};
-const CORE_ORDER=['EXIT','T1','T2','T3'];
 
-function runCoreTQQQ(weekly,athArr,adxArr,chopArr){
-  const RUNGS=CORE_ORDER.map(k=>[k,CORE[k]]);
-  let phase=null,prevPhase=null;
-  for(const w of weekly){
-    const ath=athArr[w.i],dd=w.c/ath-1,adxv=adxArr[w.i],chopv=chopArr[w.i];
-    prevPhase=phase;
-    if(phase===null){
-      if(dd<=CORE.EXIT){let reached='EXIT';for(const[k,th] of RUNGS)if(dd<=th)reached=k;phase=reached;}
-    }else{
-      let reached=phase;for(const[k,th] of RUNGS)if(dd<=th)reached=k;
-      if(CORE_ORDER.indexOf(reached)>CORE_ORDER.indexOf(phase))phase=reached;
-      const curTh=CORE[phase],levelPrice=ath*(1+curTh);
-      if(w.c>levelPrice&&adxv>25&&chopv<45)phase=null;
+   ТАЙМФРЕЙМ (I-4): сигналы выхода и возврата проверяются ТОЛЬКО на закрытии недели.
+   Внутри недели фаза не меняется. Транши — исключение: лимитки исполняются по
+   внутридневному касанию в любой день.
+   ЛЕСТНИЦА НАКОПИТЕЛЬНА (I-6): транши — заявки на ФИКСИРОВАННЫХ ценах, выставленных
+   в момент выхода. Один раз за цикл; отскоком не отменяются. Сброс — при новом ATH.
+   РЕФЕРЕНС ВОЗВРАТА (I-7): цена уровня выхода (−11,2%), либо цена самого глубокого
+   ИСПОЛНЕННОГО транша — зафиксированное число, не пересчёт от текущего ATH.
+   I-8: ложные циклы (выход → возврат выше цены выхода без траншей). Два подряд — флаг. */
+const CORE={EXIT:-0.112,T1:-0.206,T2:-0.295,T3:-0.415,BEAR:-0.20};
+const RUNG=[['T1',-0.206],['T2',-0.295],['T3',-0.415]];
+
+function runCoreTQQQ(rows,weekEnd){
+  let out=false;               // в кризисе (вышли)
+  let exitPx=null;             // цена уровня выхода (фикс.)
+  let rungPx=[0,0,0];          // фикс. цены лимиток траншей
+  let fired=[false,false,false];
+  let ref=null;                // референс возврата (фикс. цена)
+  let ath=-Infinity;
+  let falseRow=0, flagI8=false;
+  let justExited=false;
+
+  for(let i=0;i<rows.length;i++){
+    const r=rows[i];
+    const prevAth=ath;
+    ath=Math.max(ath,r.c);
+    justExited=false;
+
+    if(out){
+      // транши: внутридневное касание, одноразово, в любой день (I-6)
+      for(let j=0;j<3;j++){
+        if(!fired[j] && r.l<=rungPx[j]){ fired[j]=true; ref=rungPx[j]; }
+      }
+    }else if(ath>prevAth && prevAth>-Infinity){
+      // новый ATH вне кризиса — цикл лестницы закрыт, флаги сброшены (I-6)
+      fired=[false,false,false]; falseRow=0;
+    }
+
+    if(weekEnd[i]){                       // ТОЛЬКО закрытие недели (I-4)
+      const dd=r.c/ath-1;
+      if(!out){
+        if(dd<=CORE.EXIT){
+          out=true;
+          exitPx=ath*(1+CORE.EXIT);
+          rungPx=RUNG.map(([,th])=>ath*(1+th));
+          fired=[false,false,false];
+          ref=exitPx;                     // траншей ещё нет → референс = цена выхода
+          justExited=true;
+        }
+      }else if(r.c>ref && r.adx>25 && r.chop<45){
+        // I-8: ложный цикл = вернулись выше цены самого выхода, транши не срабатывали
+        if(!fired[0] && !fired[1] && !fired[2] && r.c>exitPx) falseRow++;
+        else falseRow=0;
+        if(falseRow>=2) flagI8=true;
+        out=false; exitPx=null; ref=null; fired=[false,false,false];
+      }
     }
   }
-  return{phase,prevPhase};
+  let depth='EXIT';
+  for(let j=0;j<3;j++) if(fired[j]) depth=RUNG[j][0];
+  return{out,depth,fired,ref,exitPx,rungPx,flagI8,falseRow,justExited,ath,
+         phase: out?depth:null};
 }
 
-function runCoreQDTE(weekly,athArr,adxArr,chopArr){
-  let phase='FULL';
-  for(const w of weekly){
-    const ath=athArr[w.i],dd=w.c/ath-1,adxv=adxArr[w.i],chopv=chopArr[w.i];
+function runCoreQDTE(rows,weekEnd){
+  let phase='FULL', ath=-Infinity, halfRef=null, outRef=null;
+  let retReady=false;                     // условие возврата выполнено на посл. недельном закрытии
+  for(let i=0;i<rows.length;i++){
+    const r=rows[i]; ath=Math.max(ath,r.c);
+    if(!weekEnd[i]) continue;             // ТОЛЬКО закрытие недели (II-2, II-3)
+    const dd=r.c/ath-1;
+    retReady=false;
     if(phase==='FULL'){
-      if(dd<=CORE.BEAR)phase='OUT';else if(dd<=CORE.EXIT)phase='HALF';
+      if(dd<=CORE.BEAR){phase='OUT'; outRef=ath*(1+CORE.BEAR); halfRef=ath*(1+CORE.EXIT);}
+      else if(dd<=CORE.EXIT){phase='HALF'; halfRef=ath*(1+CORE.EXIT); outRef=ath*(1+CORE.BEAR);}
     }else if(phase==='HALF'){
-      if(dd<=CORE.BEAR)phase='OUT';
-      else{const lvl=ath*(1+CORE.EXIT);if(w.c>lvl&&adxv>25&&chopv<45)phase='FULL';}
+      if(dd<=CORE.BEAR){phase='OUT'; if(outRef===null)outRef=ath*(1+CORE.BEAR);}
+      else if(halfRef!==null && r.c>halfRef && r.adx>25 && r.chop<45){phase='FULL'; halfRef=outRef=null; retReady=true;}
     }else{
-      const lvl=ath*(1+CORE.BEAR);if(w.c>lvl&&adxv>25&&chopv<45)phase='HALF';
+      if(outRef!==null && r.c>outRef && r.adx>25 && r.chop<45){phase='HALF'; retReady=true;}
     }
   }
-  return phase;
+  /* halfRef/outRef — ЗАФИКСИРОВАННЫЕ цены уровней возврата (от ATH на момент выхода);
+     карточка обязана сверяться с ними, а не пересчитывать от текущего ATH */
+  return{phase,halfRef,outRef,retReady,ath};
 }
 
 /* ---- прогон ---- */
@@ -379,14 +426,30 @@ async function runAdvisor(){
     const stale=Math.round((Date.now()-lastDate.getTime())/864e5);
     $('meta').textContent=`бар ${last.d}`+(stale>4?` · устарело ${stale} дн.`:'')+(weekDone?' · неделя закрыта':' · неделя не закрыта')+(live?' · цена LIVE':' · цена: закрытие');
 
-    /* машина ядра: сигнал по текущей рыночной неделе (live-цена как предварительное
-       закрытие, если неделя ещё не закрыта — так же, как curW используется везде на
-       странице). Автоматически определяет фазу — ручного ввода больше нет. */
-    const wkCore=wk.slice();
-    wkCore[wkCore.length-1]={...wkCore[wkCore.length-1],c:curW};
-    const tqCore=runCoreTQQQ(wkCore,athArr,adxArr,chopArr);
-    const qdtePhase=runCoreQDTE(wkCore,athArr,adxArr,chopArr);
+    /* машина ядра. Фаза меняется ТОЛЬКО на закрытии недели (I-4). Живая цена
+       добавляется отдельным баром, лишь если текущая неделя УЖЕ закрыта (пятница
+       позади) — иначе внутринедельное движение фазу не двигает; для него ниже
+       считается предварительное предупреждение. */
+    const coreRows=q.map((r,i)=>({c:r.c,l:r.l,adx:adxArr[i],chop:chopArr[i]}));
+    const weekEnd=new Array(q.length).fill(false);
+    for(const w of wk) weekEnd[w.i]=true;
+    /* Последний бар помечаем концом недели только если неделя реально закрыта.
+       Если торговая неделя ещё идёт — сигналов выхода/возврата нет (I-4),
+       но транши по касанию продолжают действовать (они дневные). */
+    if(!weekDone) weekEnd[q.length-1]=false;
+    /* живая цена: обновляет только внутридневной Low ТЕКУЩЕГО бара (для лимиток),
+       закрытие последнего бара не подменяем, пока неделя не закрыта */
+    if(live){
+      const li=coreRows.length-1;
+      coreRows[li]={...coreRows[li], l:Math.min(coreRows[li].l,curW), c:(weekDone?curW:coreRows[li].c)};
+    }
+    const tqCore=runCoreTQQQ(coreRows,weekEnd);
+    const qdCore=runCoreQDTE(coreRows,weekEnd);
     const standard=(tqCore.phase===null);
+
+    /* предварительное предупреждение: неделя ещё идёт, но текущая цена уже ниже
+       уровня — если неделя закроется так, сработает выход. Фазу не меняем. */
+    const preExit=(!weekDone)&&standard&&(curW<=tqCore.ath*(1+CORE.EXIT));
 
     const L={};for(const k in MULT)L[k]=ath*MULT[k];
     const tqAt=k=>tqCur?tqCur*Math.pow(L[k]/cur,3):null;
@@ -423,37 +486,58 @@ async function runAdvisor(){
         `<div class="l"><span class="c-r">−11,2% выкл</span><span>${priceCell('exit',L.exit)}</span></div>`+
         `</div>`;
       /* карточка модуля (пробой −11,2% теперь выводит в crisis-ветку автоматически) */
-      $('tq-right').innerHTML=scard(moduleView(mod,ddFrac));
+      /* preExit: цена внутри недели уже ниже −11,2%, но неделя не закрыта — фаза
+         НЕ меняется (I-4), показываем предупреждение поверх карточки модуля */
+      if(preExit){
+        $('tq-right').innerHTML=scard({label:'Предварительно: выход',dot:'var(--warn-dot)',col:'var(--warn)',dist:'',
+          ind:[`цена <b>${fmt(curW)}</b> ниже уровня −11,2% (<b>${fmt(tqCore.ath*(1+CORE.EXIT))}</b>)`,
+               `неделя не закрыта — сигнала ещё нет`,
+               `если неделя закроется так, в понедельник выход: продать 100% TQQQ → SGOV`],
+          act:'ждать закрытия недели · сделок пока нет'});
+      }else{
+        $('tq-right').innerHTML=scard(moduleView(mod,ddFrac));
+      }
       $('tq-hint').style.display='';
-      $('tq-hint').textContent='Наклон EMA20 и SMA200 считаются по дневному закрытию QQQ. Выключение модуля — по закрытию недели ниже −11,2%.'+(weekDone?'':' Текущая неделя ещё не закрыта — сигнал предварительный.');
+      $('tq-hint').textContent='Наклон EMA20 и SMA200 считаются по дневному закрытию QQQ. Сигналы выхода и возврата — только по закрытию недели (I-4); транши — по касанию в любой день.';
     }else{
-      /* кризис: лестница ядра — фаза определена машиной ядра автоматически */
-      $('tq-left').innerHTML=`<div class="lvls">`+
-        `<div class="h"><span></span><span>${tqCur?'TQQQ (QQQ)':'QQQ'}</span></div>`+
+      /* кризис: лестница ядра. Цены лимиток ЗАФИКСИРОВАНЫ в момент выхода (I-6),
+         сработавшие транши помечены — они одноразовы и отскоком не отменяются. */
+      const RG=[['t1','−20,6% транш 1',0],['t2','−29,5% транш 2',1],['t3','−41,5% транш 3',2]];
+      const tqAtPx=px=>tqCur?tqCur*Math.pow(px/cur,3):null;
+      let rows=`<div class="h"><span></span><span>${tqCur?'TQQQ (QQQ)':'QQQ'}</span></div>`+
         `<div class="l"><span class="c-cur">сейчас ${pc1(dd)}</span><span>${priceRaw(tqCur,cur)}</span></div>`+
-        `<div class="l"><span class="c-r">−11,2% выход</span><span>${priceCell('exit',L.exit)}</span></div>`+
-        `<div class="l"><span class="c-m">−20,6% транш 1</span><span>${priceCell('t1',L.t1)}</span></div>`+
-        `<div class="l"><span class="c-m">−29,5% транш 2</span><span>${priceCell('t2',L.t2)}</span></div>`+
-        `<div class="l"><span class="c-m">−41,5% транш 3</span><span>${priceCell('t3',L.t3)}</span></div>`+
-        `</div>`;
-      const lv={EXIT:'exit',T1:'t1',T2:'t2',T3:'t3'}[tqCore.phase];
-      const justEntered=(tqCore.prevPhase===null);
-      const order=['exit','t1','t2','t3'], idx=order.indexOf(lv), nxt=order[idx+1];
-      const ref=L[lv], tqRef=tqAt(lv);
-      const okRe=curW>ref&&adx>25&&chop<45;
-      const posMap={exit:'в SGOV 100%',t1:'в позиции 10%, в SGOV 90%',t2:'в позиции 35%, в SGOV 65%',t3:'в позиции 100%, лестница отработана'};
-      const nxtName={exit:'транш 1',t1:'транш 2',t2:'транш 3',t3:null}[lv];
+        `<div class="l"><span class="c-r">−11,2% выход</span><span>${priceRaw(tqAtPx(tqCore.exitPx),tqCore.exitPx)}</span></div>`;
+      for(const [k,lbl,j] of RG){
+        const px=tqCore.rungPx[j], done=tqCore.fired[j];
+        rows+=`<div class="l"><span class="${done?'c-ok':'c-m'}">${done?'✓ ':''}${lbl}</span>`+
+              `<span class="${done?'c-ok':''}">${priceRaw(tqAtPx(px),px)}</span></div>`;
+      }
+      $('tq-left').innerHTML=`<div class="lvls">${rows}</div>`;
+
+      const nFired=tqCore.fired.filter(Boolean).length;
+      const invested=[0,10,35,100][nFired];              // накоплено в позиции, % боезапаса
+      const posTxt=nFired===3?'в позиции 100%, лестница отработана'
+                 :nFired===0?'в SGOV 100%'
+                 :`в позиции ${invested}%, в SGOV ${100-invested}%`;
+      const nxtIdx=tqCore.fired.findIndex(f=>!f);
+      const nxtName=nxtIdx>=0?['транш 1','транш 2','транш 3'][nxtIdx]:null;
+      const nxtPx=nxtIdx>=0?tqCore.rungPx[nxtIdx]:null;
+      const okRe=curW>tqCore.ref&&adx>25&&chop<45;       // референс — ЗАФИКСИРОВАННАЯ цена (I-7)
+      const refTxt=`${fmt(tqCore.ref)}`+(nFired?` (транш ${nFired})`:' (уровень выхода)');
       let label,ind;
-      if(justEntered){label='Красный · выход';
+      if(tqCore.justExited){label='Красный · выход';
         ind=[`пересечён −11,2% (недельное закрытие)`,
-             lv==='exit'?`продать 100% TQQQ → SGOV, выставить лестницу`:`резкое падение — сразу ${posMap[lv]}`,
-             nxt?`${nxtName} — докупка на уровне QQQ ${fmt(L[nxt])}`:'лестница исчерпана — ждём возврата остатка'];
+             `продать 100% TQQQ → SGOV, выставить лестницу 10 / 25 / 65`,
+             `транш 1 — лимитка на уровне QQQ ${fmt(tqCore.rungPx[0])}`];
       }else if(okRe){label='Красный · возврат';
-        ind=[`разворот тренда подтверждён`,`вернуть остаток в позицию`+(weekDone?'':' (неделя не закрыта)'),`возврат: закрытие выше уровня-ордера + ADX&gt;25 + CHOP&lt;45 · сейчас ADX ${adx.toFixed(1)}, CHOP ${chop.toFixed(1)}`];
+        ind=[`закрытие выше референса ${refTxt}`,`вернуть остаток в позицию`+(weekDone?'':' (неделя не закрыта)'),
+             `ADX ${adx.toFixed(1)} &gt; 25 · CHOP ${chop.toFixed(1)} &lt; 45 — фильтр пройден`];
       }else{label='Красный · в кэше';
-        const nx=nxt?tqAt(nxt):null;
-        const foreL=nxtName&&nxt?`${nxtName} — докупить на уровне ${nx!=null?f1(nx)+' (QQQ '+fmt(L[nxt])+')':'QQQ '+fmt(L[nxt])}`:'лестница исчерпана — ждём возврата остатка';
-        ind=[posMap[lv],foreL,`возврат: закрытие выше уровня-ордера + ADX&gt;25 + CHOP&lt;45 · сейчас ADX ${adx.toFixed(1)}, CHOP ${chop.toFixed(1)}`];
+        const nx=nxtPx!=null?tqAtPx(nxtPx):null;
+        const foreL=nxtName?`${nxtName} — лимитка на ${nx!=null?f1(nx)+' (QQQ '+fmt(nxtPx)+')':'QQQ '+fmt(nxtPx)}`
+                           :'лестница отработана — ждём возврата остатка';
+        ind=[posTxt,foreL,
+             `возврат: закрытие выше ${refTxt} + ADX&gt;25 + CHOP&lt;45 · сейчас ADX ${adx.toFixed(1)}, CHOP ${chop.toFixed(1)}`];
       }
       $('tq-right').innerHTML=scard({label,dot:'var(--red-dot)',col:'var(--red)',dist:'',ind,act:''});
       $('tq-hint').style.display='none';
@@ -481,24 +565,46 @@ async function runAdvisor(){
       }
       $('qd-right').innerHTML=scard({label:'Держать 100%',dot:'var(--ok-dot)',col:'var(--ok)',dist:'',ind,act});
     }else{
-      /* кризис: ступенчатый выход/возврат — фаза QDTE определена машиной ядра автоматически */
-      const qs=qdtePhase;let label,dot,col,ind,act;
+      /* кризис: фаза QDTE — ТОЛЬКО из машины (меняется по недельному закрытию, II-2/II-3).
+         Референсы возврата — зафиксированные цены из машины, не пересчёт от текущего ATH.
+         Внутринедельное движение глубже следующего порога — предварительное предупреждение. */
+      const qs=qdCore.phase;let label,dot,col,ind,act;
+      const preBear=(!weekDone)&&(qs!=='OUT')&&(curW<=qdCore.ath*(1+CORE.BEAR));
       if(qs==='FULL'){
-        if(dd<=DD.bear){label='Медвежий · выход 100%';dot='var(--bear-dot)';col='var(--bear)';
-          ind=[`просадка QQQ <b>${pc1(dd)}</b> ≤ −20,0%`];act='выход 100% в SGOV';}
-        else{label='Красный · выход 50%';dot='var(--red-dot)';col='var(--red)';
-          ind=[`просадка QQQ <b>${pc1(dd)}</b> ≤ −11,2%`,`медвежий −20,0%: не достигнут`];act='выход 50% в SGOV, выплаты — в SGOV';}
+        /* сюда попадаем в TQQQ-кризисе до того, как QDTE-машина увидела недельное
+           закрытие ниже −11,2% (например TQQQ вышел, QDTE ещё держит 100%) */
+        label='Держать 100%';dot='var(--ok-dot)';col='var(--ok)';
+        ind=[`фаза QDTE меняется по недельному закрытию`,
+             preBear?`предварительно: цена ниже −20% — если неделя закроется так, выход 100%`
+                    :`при недельном закрытии ≤ −11,2% — выход 50%`];
+        act='держать 100%, выплаты — в SGOV';
       }else if(qs==='HALF'){
-        const okBack=curW>L.exit&&adx>25&&chop<45;
+        const okBack=qdCore.halfRef!==null&&curW>qdCore.halfRef&&adx>25&&chop<45;
         label='Красный · выход 50%';dot='var(--red-dot)';col='var(--red)';
-        if(dd<=DD.bear){ind=[`просадка QQQ <b>${pc1(dd)}</b> ≤ −20,0%`];act='выход 100% в SGOV';}
-        else if(okBack){ind=[`условия возврата выполнены`,`возврат: закрытие выше −11,2% + ADX&gt;25 + CHOP&lt;45 · сейчас ADX ${adx.toFixed(1)}, CHOP ${chop.toFixed(1)}`];act='вернуть остаток в QDTE';}
-        else{ind=[`ждём возврат остатка`,`возврат: закрытие выше −11,2% + ADX&gt;25 + CHOP&lt;45 · сейчас ADX ${adx.toFixed(1)}, CHOP ${chop.toFixed(1)}`];act='держать 50% в SGOV';}
+        if(preBear){
+          ind=[`в SGOV 50%`,`предварительно: цена ниже −20% — если неделя закроется так, выход 100%`];
+          act='держать 50% в SGOV · ждать закрытия недели';
+        }else if(okBack){
+          ind=[`закрытие выше уровня возврата ${fmt(qdCore.halfRef)}`,
+               `ADX ${adx.toFixed(1)} &gt; 25 · CHOP ${chop.toFixed(1)} &lt; 45 — фильтр пройден`+(weekDone?'':' (неделя не закрыта)')];
+          act='вернуть остаток в QDTE';
+        }else{
+          ind=[`в SGOV 50%, ждём возврат остатка`,
+               `возврат: закрытие выше ${qdCore.halfRef?fmt(qdCore.halfRef):'—'} + ADX&gt;25 + CHOP&lt;45 · сейчас ADX ${adx.toFixed(1)}, CHOP ${chop.toFixed(1)}`];
+          act='держать 50% в SGOV';
+        }
       }else{ // OUT
-        const okBack1=curW>L.bear&&adx>25&&chop<45;
+        const okBack1=qdCore.outRef!==null&&curW>qdCore.outRef&&adx>25&&chop<45;
         label='Медвежий · выход 100%';dot='var(--bear-dot)';col='var(--bear)';
-        if(okBack1){ind=[`условия первого транша выполнены`,`возврат: закрытие выше −20% + ADX&gt;25 + CHOP&lt;45 · сейчас ADX ${adx.toFixed(1)}, CHOP ${chop.toFixed(1)}`];act='вернуть 50% в QDTE';}
-        else{ind=[`ждём возврат 50%`,`возврат: закрытие выше −20% + ADX&gt;25 + CHOP&lt;45 · сейчас ADX ${adx.toFixed(1)}, CHOP ${chop.toFixed(1)}`];act='держать 100% в SGOV';}
+        if(okBack1){
+          ind=[`закрытие выше уровня первого транша ${fmt(qdCore.outRef)}`,
+               `ADX ${adx.toFixed(1)} &gt; 25 · CHOP ${chop.toFixed(1)} &lt; 45 — фильтр пройден`+(weekDone?'':' (неделя не закрыта)')];
+          act='вернуть 50% в QDTE';
+        }else{
+          ind=[`в SGOV 100%, ждём первый транш возврата`,
+               `возврат: закрытие выше ${qdCore.outRef?fmt(qdCore.outRef):'—'} + ADX&gt;25 + CHOP&lt;45 · сейчас ADX ${adx.toFixed(1)}, CHOP ${chop.toFixed(1)}`];
+          act='держать 100% в SGOV';
+        }
       }
       $('qd-right').innerHTML=scard({label,dot,col,dist:'',ind,act});
     }
@@ -527,7 +633,13 @@ async function runAdvisor(){
     }
     $('qd-health').innerHTML=hHtml;
 
-    if(Math.abs(dd)<=0.1){$('warnbar').style.display='';$('warnbar').textContent='QQQ на новом максимуме: пересчитать уровни, переставить алерты.';}
+    /* I-8: два ложных цикла подряд — третий выход НЕ автоматический, решение на человеке */
+    if(tqCore.flagI8){
+      $('warnbar').style.display='';
+      $('warnbar').innerHTML='<b>I-8: выход дважды подряд оказался ложным</b> — рынок пилит у −11,2%. '+
+        'Третий выход система автоматически не принимает: решите сами — пила (держать позицию, приостановить выходы) '+
+        'или начало разворота вниз (выход валиден). Транши при любом решении продолжают действовать.';
+    }else if(Math.abs(dd)<=0.1){$('warnbar').style.display='';$('warnbar').textContent='QQQ на новом максимуме: пересчитать уровни, переставить алерты.';}
     $('out').style.display='';
   }catch(e){log('ОШИБКА: '+e.message);$('warnbar').style.display='';$('warnbar').textContent='Ошибка: '+e.message;$('meta').textContent='ошибка загрузки';}
 }

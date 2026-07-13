@@ -123,6 +123,9 @@ a{color:inherit}
 .hc .n{font-family:var(--mono);font-size:.95rem;font-weight:500}
 .hc .c{font-size:.68rem;color:var(--muted);margin-top:3px}
 
+/* плейсхолдер загрузки */
+.loading{min-height:260px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;color:var(--muted)}
+
 /* подвал */
 .foot{margin-top:26px}
 .footline{display:flex;justify-content:space-between;align-items:center;margin-top:16px}
@@ -150,6 +153,8 @@ a{color:inherit}
 
   <div class="warnbar" id="warnbar"></div>
 
+  <div class="loading" id="loader">загрузка данных…</div>
+
   <div id="out" style="display:none">
     <div class="hdrline"><span class="hnums" id="hdr"></span><span id="hdr-badge"></span></div>
     <div id="regime"></div>
@@ -169,7 +174,7 @@ a{color:inherit}
     </div>
   </div>
 
-  <div class="foot">
+  <div class="foot" id="foot" style="display:none">
     <div class="rule4" style="margin-bottom:0"></div>
     <div class="footline">
       <span class="fbrand">
@@ -726,6 +731,19 @@ async function runAdvisor(){
 /* автозапуск при открытии; обновление — перезагрузкой (F5) */
 runAdvisor().then(()=>{window.__loaded=true;});
 </script>
-<script>document.getElementById('yr').textContent=new Date().getFullYear();</script>
+<script>
+document.getElementById('yr').textContent=new Date().getFullYear();
+(function(){
+  var out=document.getElementById('out'),wb=document.getElementById('warnbar'),
+      ld=document.getElementById('loader'),ft=document.getElementById('foot');
+  function upd(){
+    if(out.style.display!=='none'){ld.style.display='none';ft.style.display='';}
+    else if(wb.style.display!=='none'&&wb.style.display!==''){ld.style.display='none';}
+  }
+  new MutationObserver(upd).observe(out,{attributes:true,attributeFilter:['style']});
+  new MutationObserver(upd).observe(wb,{attributes:true,attributeFilter:['style']});
+  upd();
+})();
+</script>
 </body>
 </html>

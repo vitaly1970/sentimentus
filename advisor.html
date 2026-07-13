@@ -5,82 +5,148 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Main Strategy · Barbell TQQQ + QDTE</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-:root{--acc:#2F74C0;--acc-bg:#EDF4FC;--acc-bd:#CBE0F6}
+/* ===== Metro-стиль · Barbell ===== */
+:root{
+  --sans:'Space Grotesk',system-ui,sans-serif;
+  --mono:'JetBrains Mono',monospace;
+  --ink:#1a1a1a; --sec:#767676; --muted:#9a9a9a; --rule:#EDEDED;
 
-.warnbar{background:var(--red-bg);border:1px solid var(--red-dot);color:var(--red);border-radius:9px;padding:11px 15px;font-size:.9rem;margin-bottom:15px;display:none}
-.livehint{color:#EF3340;font-size:.8rem;line-height:1.45;margin-top:12px}
+  --blue:#00A4EF; --violet:#7550BE; --green:#7FBA00; --yellow:#FFB900;
 
-/* шапка со сводкой QQQ + мастер-статус */
+  --acc:#0084C0;
+  --ok:#4C8A00;   --ok-dot:#7FBA00;   --ok-bg:transparent;
+  --warn:#C29B00; --warn-dot:#F0B400; --warn-bg:transparent;
+  --red:#D24726;  --red-dot:#D24726;  --red-bg:#FBF1EF;
+  --bear:#8E2A9E; --bear-dot:#AA00CC; --bear-bg:transparent;
+  --card:#F8F8F8; --surf:transparent;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:#fff;font-family:var(--sans);color:var(--ink);-webkit-font-smoothing:antialiased;padding:34px 20px}
+.wrap{max-width:760px;margin:0 auto}
+
+a{color:inherit}
+.back{display:inline-block;font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;margin-bottom:14px}
+.back:hover{color:var(--ink)}
+
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.tleft{display:flex;align-items:center;gap:10px}
+.tbadge{width:30px;height:30px;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex:none}
+.home{font-size:22px;font-weight:300;letter-spacing:.01em;text-decoration:none;color:var(--ink)}
+.meta{font-family:var(--mono);font-size:11px;color:var(--muted)}
+
+.rule4{height:2px;background:linear-gradient(to right,var(--blue) 0 25%,var(--green) 25% 50%,var(--yellow) 50% 75%,var(--violet) 75% 100%);margin-bottom:14px}
+
+.warnbar{background:var(--red-bg);border-left:3px solid var(--red);color:var(--red);padding:11px 15px;font-size:.9rem;margin-bottom:15px;display:none}
+.livehint{color:#D24726;font-size:.78rem;line-height:1.45;margin-top:12px}
+
+/* сводка QQQ + мастер-статус */
 .hdrline{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
-.hnums{font-family:var(--mono);font-size:.85rem;color:var(--sec)}
-.hnums b{color:var(--ink);font-weight:600}
-.hnums .live{color:var(--acc);font-weight:600}
+.hnums{font-family:var(--mono);font-size:.8rem;color:var(--sec)}
+.hnums b{color:var(--ink);font-weight:500}
+.hnums .live{color:var(--blue);font-weight:500}
 
-/* информационная плашка режима (не селектор) */
-.regime{border-radius:12px;padding:13px 16px;margin-bottom:16px;background:var(--acc-bg);border:1px solid var(--acc-bd)}
-.regime .t{font-size:.95rem;font-weight:600;color:var(--acc)}
-.regime .s{font-size:.8rem;color:var(--acc);margin-top:3px;font-family:var(--mono)}
-.regime.crisis{background:var(--red-bg);border-color:var(--red-dot)}
-.regime.crisis .t,.regime.crisis .s{color:var(--red)}
+/* мастер-статус: квадратик + цветной текст, без плашки */
+.badge{display:inline-flex;align-items:center;gap:7px;font-size:.85rem;font-weight:700;padding:0;background:none}
+.badge .dot{width:9px;height:9px;border-radius:0}
+.b-ok{color:var(--ok)} .b-ok .dot{background:var(--ok-dot)}
+.b-warn{color:var(--warn)} .b-warn .dot{background:var(--warn-dot)}
+.b-red{color:var(--red)} .b-red .dot{background:var(--red-dot)}
+.b-bear{color:var(--bear)} .b-bear .dot{background:var(--bear-dot)}
+.bs-ok{color:var(--ok)} .bs-ok .dot{background:var(--ok-dot)}
+.bs-warn{color:var(--warn)} .bs-warn .dot{background:var(--warn-dot)}
+.bs-red{color:var(--red)} .bs-red .dot{background:var(--red-dot)}
 
-.wing{background:var(--surf);border:1px solid var(--rule);border-radius:13px;padding:18px 20px;margin-bottom:14px}
-.wing-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;gap:10px;flex-wrap:wrap}
-.wing-title{font-size:1.15rem;font-weight:600;letter-spacing:.01em}
-.wing-nums{font-family:var(--mono);font-size:.85rem;color:var(--sec)}
-.wing-nums b{color:var(--ink);font-weight:600}
+/* плашка режима → тонкий кант слева */
+.regime{border-left:3px solid var(--blue);padding:8px 14px;margin-bottom:26px}
+.regime .t{font-size:.9rem;font-weight:700;color:var(--ink)}
+.regime .s{font-size:.73rem;color:var(--sec);margin-top:3px;font-family:var(--mono)}
+.regime.crisis{border-left-color:var(--red)}
+.regime.crisis .t{color:var(--red)}
+.regime.crisis .s{color:var(--red)}
+
+/* крылья: без карточек, маркер + подчёркивание */
+.wing{padding:0;margin:0}
+.wing-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;gap:10px;flex-wrap:wrap;position:relative;padding-bottom:10px}
+.wing-head::after{content:'';position:absolute;left:0;bottom:0;width:64px;height:2px}
+.wing-tq .wing-head::after{background:var(--blue)}
+.wing-qd .wing-head::after{background:var(--violet)}
+.wing-title{font-size:16px;font-weight:700;letter-spacing:.01em;display:inline-flex;align-items:center}
+.wing-title::before{content:'';width:10px;height:10px;margin-right:8px;flex:none}
+.wing-tq .wing-title::before{background:var(--blue)}
+.wing-qd .wing-title::before{background:var(--violet)}
+.wing-nums{font-family:var(--mono);font-size:.78rem;color:var(--sec)}
+.wing-nums b{color:var(--ink);font-weight:500}
 .wing-nums .ref{color:var(--muted)}
 
-.wing-grid{display:grid;grid-template-columns:minmax(0,235px) minmax(0,1fr);gap:22px;align-items:start}
+/* разделитель-штанга между крыльями */
+.wingsep{display:flex;align-items:center;gap:14px;margin:34px 0}
+.wingsep::before,.wingsep::after{content:'';flex:1;height:1px;background:#E4E4E4}
+.wingsep .w1,.wingsep .w2{width:9px;height:9px;flex:none}
+.wingsep .w1{background:var(--blue);margin-right:-11px}
+.wingsep .w2{background:var(--violet)}
+
+.wing-grid{display:grid;grid-template-columns:minmax(0,250px) minmax(0,1fr);gap:22px;align-items:start}
 @media(max-width:660px){.wing-grid{grid-template-columns:1fr;gap:16px}}
 
 /* левая колонка — уровни */
-.lvls{font-family:var(--mono);font-size:.8rem}
-.lvls .h{display:grid;grid-template-columns:1fr auto;gap:10px;padding:0 0 5px;color:var(--muted);font-size:.72rem}
+.lvls{font-family:var(--mono);font-size:.75rem}
+.lvls .h{display:grid;grid-template-columns:1fr auto;gap:10px;padding:0 0 5px;color:var(--muted);font-size:.66rem}
 .lvls .h.q{grid-template-columns:1fr auto auto;gap:12px}
-.lvls .l{display:grid;grid-template-columns:1fr auto;gap:10px;padding:6px 0;border-top:1px solid var(--rule)}
+.lvls .l{display:grid;grid-template-columns:1fr auto;gap:10px;padding:6px 0;border-top:1px solid var(--rule);align-items:center}
 .lvls .l.q{grid-template-columns:1fr auto auto;gap:12px}
+.lvls .l > span:first-child::before{content:'';display:inline-block;width:8px;height:8px;margin-right:7px;background:currentColor;vertical-align:-1px}
+.lvls .l > span:first-child.c-m::before{background:#C8C8C8}
 .lvls .paren{color:var(--muted)}
 .c-cur{color:var(--acc)} .c-y{color:var(--warn)} .c-r{color:var(--red)} .c-b{color:var(--bear)} .c-ok{color:var(--ok)} .c-m{color:var(--sec)}
 
 /* правая колонка — карточка состояния */
-.scard{background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:13px 15px}
+.scard{background:var(--card);border-top:2px solid var(--blue);padding:12px 14px}
+.wing-qd .scard{border-top-color:var(--violet)}
 .scard .st{display:flex;align-items:flex-start;gap:8px;margin-bottom:10px}
-.scard .st .dot{width:9px;height:9px;border-radius:50%;margin-top:6px;flex:0 0 auto}
-.scard .st .lb{font-size:.95rem;font-weight:600;line-height:1.4}
-.scard .ind{font-family:var(--mono);font-size:.8rem;line-height:1.85;color:var(--sec)}
-.scard .ind b{color:var(--ink);font-weight:600}
-.scard .act{margin-top:11px;padding-top:10px;border-top:1px solid var(--rule);font-size:.85rem;color:var(--ink)}
-.scard .act b{font-weight:600}
+.scard .st .dot{width:9px;height:9px;border-radius:0;margin-top:5px;flex:0 0 auto}
+.scard .st .lb{font-size:.9rem;font-weight:700;line-height:1.4}
+.scard .ind{font-family:var(--mono);font-size:.73rem;line-height:1.85;color:var(--sec)}
+.scard .ind b{color:var(--ink);font-weight:500}
+.scard .act{margin-top:11px;padding-top:10px;border-top:1px solid var(--rule);font-size:.82rem;color:var(--ink)}
+.scard .act b{font-weight:700}
 
-.badge{display:inline-flex;align-items:center;gap:7px;font-size:.94rem;padding:5px 15px;border-radius:7px;font-weight:600}
-.badge .dot{width:9px;height:9px;border-radius:50%}
-.b-ok{background:var(--ok-dot);color:#fff} .b-ok .dot{background:#fff}
-.b-warn{background:var(--warn-dot);color:#3d2402} .b-warn .dot{background:#7E4A0A}
-.b-red{background:var(--red-dot);color:#fff} .b-red .dot{background:#fff}
-.b-bear{background:var(--bear-dot);color:#fff} .b-bear .dot{background:#fff}
-.bs-ok{background:var(--ok-bg);color:var(--ok)} .bs-ok .dot{background:var(--ok-dot)}
-.bs-warn{background:var(--warn-bg);color:var(--warn)} .bs-warn .dot{background:var(--warn-dot)}
-.bs-red{background:var(--red-bg);color:var(--red)} .bs-red .dot{background:var(--red-dot)}
+/* здоровье выплат — нейтральное */
+.health{margin-top:14px}
+.health-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.health-head .t{font-size:.82rem;color:var(--ink);font-weight:700;letter-spacing:.01em}
+.health-cells{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.hc{background:var(--card);padding:10px;text-align:left}
+.hc .n{font-family:var(--mono);font-size:.95rem;font-weight:500}
+.hc .c{font-size:.68rem;color:var(--muted);margin-top:3px}
 
-.health{border-top:1px solid var(--rule);margin-top:14px;padding-top:15px}
-.health-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-.health-head .t{font-size:.94rem;color:var(--sec);text-transform:uppercase;letter-spacing:.05em;font-weight:500}
-.health-cells{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-.hc{background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:15px 10px;text-align:center}
-.hc .n{font-family:var(--mono);font-size:1.5rem;font-weight:600}
-.hc .c{font-size:.85rem;color:var(--sec);margin-top:5px}
+/* подвал */
+.foot{margin-top:26px}
+.footline{display:flex;justify-content:space-between;align-items:center;margin-top:16px}
+.fbrand{display:flex;align-items:center;gap:9px}
+.fmark{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:1.5px;width:18px;height:18px}
+.fmark span{display:block}
+.fmark .m1{background:#F25022}.fmark .m2{background:#7FBA00}
+.fmark .m3{background:#00A4EF}.fmark .m4{background:#FFB900}
+.fname{font-size:13px;font-weight:700;color:var(--ink)}
+.fyear{font-family:var(--mono);font-size:10.5px;color:#B4B4B4}
 </style>
 </head>
 <body>
 <div class="wrap">
   <a class="back" href="index.html">← все инструменты</a>
   <div class="topbar">
-    <a class="home" href="index.html">Main Strategy</a>
+    <span class="tleft">
+      <span class="tbadge">С</span>
+      <a class="home" href="index.html">Main Strategy</a>
+    </span>
     <span class="meta" id="meta">данные не загружены</span>
   </div>
+
+  <div class="rule4"></div>
 
   <div class="warnbar" id="warnbar"></div>
 
@@ -88,16 +154,29 @@
     <div class="hdrline"><span class="hnums" id="hdr"></span><span id="hdr-badge"></span></div>
     <div id="regime"></div>
 
-    <div class="wing">
+    <div class="wing wing-tq">
       <div class="wing-head"><span class="wing-title">TQQQ</span><span class="wing-nums" id="tq-nums"></span></div>
       <div class="wing-grid"><div id="tq-left"></div><div id="tq-right"></div></div>
       <div class="livehint" id="tq-hint" style="display:none"></div>
     </div>
 
-    <div class="wing">
+    <div class="wingsep" aria-hidden="true"><span class="w1"></span><span class="w2"></span></div>
+
+    <div class="wing wing-qd">
       <div class="wing-head"><span class="wing-title">QDTE</span><span class="wing-nums" id="qd-nums"></span></div>
       <div class="wing-grid"><div id="qd-left"></div><div id="qd-right"></div></div>
       <div class="health" id="qd-health"></div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div class="rule4" style="margin-bottom:0"></div>
+    <div class="footline">
+      <span class="fbrand">
+        <span class="fmark" aria-hidden="true"><span class="m1"></span><span class="m2"></span><span class="m3"></span><span class="m4"></span></span>
+        <span class="fname">Barbell · TQQQ + QDTE</span>
+      </span>
+      <span class="fyear">© <span id="yr"></span></span>
     </div>
   </div>
 </div>
@@ -647,5 +726,6 @@ async function runAdvisor(){
 /* автозапуск при открытии; обновление — перезагрузкой (F5) */
 runAdvisor().then(()=>{window.__loaded=true;});
 </script>
+<script>document.getElementById('yr').textContent=new Date().getFullYear();</script>
 </body>
 </html>

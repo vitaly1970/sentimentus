@@ -24,11 +24,9 @@ body{background:#fff;color:var(--ink);font-family:var(--sans);-webkit-font-smoot
 .mono{font-family:var(--monof)}
 .num{font-family:var(--monof);font-variant-numeric:tabular-nums}
 
-nav.sitenav{display:flex;gap:18px;margin-bottom:14px;flex-wrap:wrap}
-nav.sitenav a{text-decoration:none;font-family:var(--monof);font-size:11px;color:var(--muted);display:inline-flex;align-items:center;gap:7px}
+nav.sitenav{margin-bottom:14px}
+nav.sitenav a{text-decoration:none;font-family:var(--monof);font-size:11px;color:var(--muted)}
 nav.sitenav a:hover{color:var(--ink)}
-nav.sitenav a.active{color:var(--ink);font-weight:500}
-nav.sitenav a.active::before{content:'';width:8px;height:8px;background:var(--yellow);flex:none}
 
 header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:12px;flex-wrap:wrap;gap:10px}
 .hleft{display:flex;align-items:center;gap:12px}
@@ -168,10 +166,7 @@ button:focus-visible{outline:2px solid var(--yellow);outline-offset:2px}
 </head>
 <body>
 <nav class="sitenav">
-  <a href="/">Главная</a>
-  <a href="/bottom">Индикатор капитуляции</a>
-  <a href="/gex.html">GEX — дилерская гамма</a>
-  <a href="/tott.html" class="active">Top of the Top</a>
+  <a href="/">&larr; все инструменты</a>
 </nav>
 <header>
   <span class="hleft">

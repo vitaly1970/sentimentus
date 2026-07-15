@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Top of the Top — детектор вершины</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ===== Metro-стиль · Barbell ===== */
+:root{
+  --sans:'Space Grotesk',system-ui,sans-serif;
+  --monof:'JetBrains Mono',monospace;
+  --ink:#1a1a1a; --ink2:#767676; --muted:#9a9a9a; --line:#E4E4E4; --rule:#EDEDED;
+  --card:#F8F8F8;
+  --blue:#00A4EF; --violet:#7550BE; --yellow:#FFB900;
+  --green:#7FBA00; --green-ink:#4C8A00;
+  --warn:#C29B00; --warn-dot:#F0B400;
+  --red:#D24726;
+  --marker:#0084C0;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#fff;color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;padding:34px 20px;max-width:1000px;margin:0 auto}
+.mono{font-family:var(--monof)}
+
+.back{display:inline-block;font-family:var(--monof);font-size:11px;color:var(--muted);text-decoration:none;margin-bottom:14px}
+.back:hover{color:var(--ink)}
+
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;border:none;padding:0}
+.hleft{display:flex;align-items:center;gap:10px}
+.hbadge{width:30px;height:30px;background:var(--yellow);color:#1a1a1a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex:none}
+h1{font-size:22px;font-weight:300;letter-spacing:.01em}
+#asof{font-size:11px;color:var(--muted)}
+button{font-family:var(--sans);font-size:13px;font-weight:700;padding:6px 16px;border:1px solid var(--warn);background:transparent;color:var(--warn);cursor:pointer;border-radius:0;transition:background .15s,color .15s}
+button:hover{background:var(--warn);color:#fff}
+button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+
+.rule4{height:2px;background:linear-gradient(to right,var(--blue) 0 25%,var(--green) 25% 50%,var(--yellow) 50% 75%,var(--violet) 75% 100%);margin-bottom:16px}
+
+/* статус: тонкий кант слева */
+#status{border-left:3px solid #C8C8C8;padding:10px 16px;font-size:16px;font-weight:700;margin-bottom:10px;background:none;border-radius:0;text-align:left;letter-spacing:0}
+#status.yellow{border-left-color:var(--warn-dot);color:var(--warn);background:none}
+#status.neutral{border-left-color:#C8C8C8;color:var(--ink2);background:none}
+#status small{display:block;font-weight:400;font-size:12px;margin-top:4px;color:var(--ink2);font-family:var(--monof);letter-spacing:0}
+
+/* красный контур — честная плашка "ожидает данных" */
+#redrow{border-left:3px solid #C8C8C8;padding:9px 16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;background:var(--card)}
+#redrow .lbl{font-family:var(--monof);font-size:11px;color:var(--ink2)}
+#redrow .st{font-family:var(--monof);font-size:10.5px;color:var(--red)}
+
+/* панели */
+.grid{display:flex;flex-direction:column;gap:26px;margin-bottom:26px}
+.panel{background:none;border:none;border-radius:0;padding:0}
+.panel h2{font-size:13px;letter-spacing:.01em;color:var(--ink);margin-bottom:12px;font-weight:700;display:flex;align-items:center;position:relative;padding-bottom:10px}
+.panel h2::before{content:'';width:10px;height:10px;background:var(--blue);margin-right:8px;flex:none}
+.panel h2::after{content:'';position:absolute;left:0;bottom:0;width:64px;height:2px;background:var(--blue)}
+.panel h2 .h2-sub{letter-spacing:0;font-weight:400;color:var(--muted);margin-left:6px}
+
+/* полоса режима */
+#regimewrap{margin-bottom:8px}
+#regimebar{position:relative;height:8px;background:#ecece6;border-radius:0}
+#regimebar .fill{position:absolute;left:0;top:0;height:8px;background:var(--warn-dot);width:0}
+#regimebar .thr{position:absolute;top:-4px;width:2px;height:16px;background:var(--ink);box-shadow:0 0 0 2px #fff}
+#regimelabels{position:relative;height:14px;font-family:var(--monof);font-size:9px;color:var(--muted);margin-top:3px}
+#regimelabels span{position:absolute;transform:translateX(-50%)}
+
+/* слоты */
+.slot-row{display:grid;grid-template-columns:1fr 82px;align-items:start;gap:16px;padding:12px 0 12px 14px;border-left:3px solid #C8C8C8;border-bottom:1px solid var(--rule);margin-bottom:2px}
+.slot-row:last-child{border-bottom:none}
+.slot-row .sname{font-size:13.5px;font-weight:700;display:flex;align-items:center;gap:9px}
+.slot-row .smark{width:9px;height:9px;flex:none;background:#C8C8C8}
+.slot-row .sdesc{font-family:var(--monof);font-size:10.5px;color:var(--muted);margin-top:5px;line-height:1.5}
+.slot-row .sbar{height:5px;background:#ecece6;margin-top:8px;position:relative}
+.slot-row .sbar .sfill{height:5px;background:#C8C8C8;width:0}
+.slot-row .sval{text-align:right;font-family:var(--monof);font-size:16px;font-weight:500}
+/* способ В: цвет по уровню */
+.lvl-red .smark,.lvl-red .sfill{background:var(--red)}
+.lvl-red{border-left-color:var(--red)}
+.lvl-red .sval{color:var(--red)}
+.lvl-yellow .smark,.lvl-yellow .sfill{background:var(--warn-dot)}
+.lvl-yellow{border-left-color:var(--warn-dot)}
+.lvl-yellow .sval{color:var(--warn)}
+.lvl-gray .smark,.lvl-gray .sfill{background:#B4B4B4}
+.lvl-gray{border-left-color:#C8C8C8}
+.lvl-gray .sval{color:var(--ink2)}
+.lvl-dead .sval{color:var(--muted);font-size:12px}
+
+/* чипы источников */
+#sources{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:16px}
+@media(max-width:560px){#sources{grid-template-columns:repeat(1,1fr)}}
+.src{display:flex;align-items:center;gap:8px;background:var(--card);border:none;border-radius:0;padding:8px 10px;font-size:12px;font-weight:500}
+.src .dot{width:8px;height:8px;border-radius:0;background:var(--muted);flex:none}
+.src.loading .dot{background:var(--warn-dot);animation:pulse 1s infinite}
+.src.ok .dot{background:var(--green);animation:none}
+.src.fail .dot{background:var(--red);animation:none}
+.src small{display:block;color:var(--muted);font-size:10.5px;font-weight:400;font-family:var(--monof)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* ограничения прибора */
+#limits{border-left:3px solid var(--violet);padding:11px 15px;background:none;margin-bottom:26px}
+#limits .lh{font-family:var(--monof);font-size:10px;color:var(--violet);letter-spacing:.05em;margin-bottom:6px}
+#limits p{font-size:12px;line-height:1.6;color:var(--ink2)}
+
+/* блок B честные чипы */
+#blockb{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:26px;font-family:var(--monof);font-size:11px}
+@media(max-width:560px){#blockb{grid-template-columns:repeat(2,1fr)}}
+.bchip{background:var(--card);padding:8px 10px;display:flex;justify-content:space-between;align-items:center}
+.bchip .bs-ok{color:var(--green-ink)}
+.bchip .bs-no{color:var(--red)}
+.bchip .bs-part{color:var(--warn)}
+
+#log{display:none}
+
+/* подвал */
+.foot{margin-top:26px}
+.footline{display:flex;justify-content:space-between;align-items:center;margin-top:16px}
+.fbrand{display:flex;align-items:center;gap:9px}
+.fmark{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:1.5px;width:18px;height:18px}
+.fmark span{display:block}
+.fmark .m1{background:#F25022}.fmark .m2{background:#7FBA00}
+.fmark .m3{background:#00A4EF}.fmark .m4{background:#FFB900}
+.fname{font-size:13px;font-weight:700;color:var(--ink)}
+.fyear{font-family:var(--monof);font-size:10.5px;color:#B4B4B4}
+</style>
+</head>
+<body>
+<a class="back" href="index.html">← все инструменты</a>
+<header>
+  <span class="hleft">
+    <span class="hbadge">T</span>
+    <h1>Top of the Top</h1>
+  </span>
+  <div><span id="asof" class="mono">данные загружаются…</span>
+  <button id="refresh" style="margin-left:12px">Обновить</button></div>
+</header>
+
+<div class="rule4"></div>
+
+<div id="status">Загрузка данных…<small>обычно 5–20 секунд; состояние источников — ниже</small></div>
+<div id="redrow"><span class="lbl">Красный контур · распределение</span><span class="st">ожидает данных B1 · B3</span></div>
+
+<div id="sources">
+  <div class="src" id="src-a1"><span class="dot"></span><span>A1 маржа<small id="src-a1-d">ожидание</small></span></div>
+  <div class="src" id="src-a2"><span class="dot"></span><span>A2 аллокация<small id="src-a2-d">ожидание</small></span></div>
+  <div class="src" id="src-a4"><span class="dot"></span><span>A4 условия<small id="src-a4-d">ожидание</small></span></div>
+</div>
+
+<div class="grid">
+  <div class="panel">
+    <h2>Медленный контур <span class="h2-sub">— режим исчерпания топлива (Блок A)</span></h2>
+    <div id="regimewrap">
+      <div id="regimebar">
+        <div class="fill" id="regimefill"></div>
+        <div class="thr" id="regimethr"></div>
+      </div>
+      <div id="regimelabels">
+        <span id="lbl-thr">θ —</span>
+        <span id="lbl-score" style="color:var(--warn)">—</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Слоты Блока A <span class="h2-sub">— перцентиль 0–100</span></h2>
+    <div id="slots"></div>
+  </div>
+</div>
+
+<div id="limits">
+  <div class="lh">ОГРАНИЧЕНИЯ ПРИБОРА · честно</div>
+  <p>Жёлтое сейчас частично отражает эпоху 2020-х (кластеризация, флаг era_clustering).
+     Вершина 2000 полным составом не покрыта — A1 берётся с середины истории.
+     Красный контур не собран: нет B1 (широта) и B3 (P/C).</p>
+</div>
+
+<div class="panel">
+  <h2>Красный контур <span class="h2-sub">— Блок B, триггер распределения</span></h2>
+  <div id="blockb">
+    <div class="bchip"><span>B1 широта</span><span class="bs-no">нет</span></div>
+    <div class="bchip"><span>B3 P/C</span><span class="bs-no">нет</span></div>
+    <div class="bchip"><span>B4 VIX/SKEW</span><span class="bs-ok">есть</span></div>
+    <div class="bchip"><span>B5 кредит</span><span class="bs-ok">есть</span></div>
+    <div class="bchip"><span>B6 носитель</span><span class="bs-ok">есть</span></div>
+    <div class="bchip"><span>B2 short vol</span><span class="bs-part">част.</span></div>
+  </div>
+</div>
+
+<div id="log"></div>
+
+<div class="foot">
+  <div class="rule4" style="margin-bottom:0"></div>
+  <div class="footline">
+    <span class="fbrand">
+      <span class="fmark" aria-hidden="true"><span class="m1"></span><span class="m2"></span><span class="m3"></span><span class="m4"></span></span>
+      <span class="fname">Barbell · TQQQ + QDTE</span>
+    </span>
+    <span class="fyear">© <span id="yr"></span></span>
+  </div>
+</div>
+
+<script>
+// ================= КОНФИГ БЛОКА A (заморожен) =================
+// Источник истины: tott_config_blockA.json (Colab-заморозка).
+// θ_A и era_clustering — из заморозки; страница НЕ пересчитывает пороги,
+// а воспроизводит замороженные конвенции на живых данных.
+const CFG = {
+  THETA_A: 70.9,           // порог жёлтого (prevalence 15%)
+  MA_QUARTERS: 60,         // 15-летняя средняя для формы F (A2)
+  PCTL_WINDOW: 100,        // окно перцентиля 25 лет = 100 кварталов
+  PCTL_MINP: 25,           // минимум точек в окне
+  FRED_A1: "BOGZ1FL663067003Q",   // маржинальный долг брокеров (Z.1, квартальный)
+  FRED_A2: "BOGZ1FL153064486Q",   // доля акций в активах домохозяйств (Z.1)
+  FRED_A4_RATE: "DFII10",         // реальная ставка 10Y TIPS
+  FRED_A4_WALCL: "WALCL",         // баланс ФРС (для net liquidity)
+  A4_RATE_WIN: 504,        // окно накопленного ужесточения (дни)
+  A4_PCTL_WIN: 1260,       // окно перцентиля A4 (≈5 лет торговых дней)
+};
+
+// ================= ДВИЖОК (конвенции Блока A) =================
+// скользящая средняя, min_periods=часть окна
+function rollMean(vals, w, minp){
+  const out=new Array(vals.length).fill(NaN); const q=[]; let sum=0,cnt=0;
+  minp=minp||Math.max(20,Math.floor(w/4));
+  for(let i=0;i<vals.length;i++){
+    const x=vals[i]; q.push(x);
+    if(!Number.isNaN(x)){sum+=x;cnt++;}
+    if(q.length>w){const y=q.shift();if(!Number.isNaN(y)){sum-=y;cnt--;}}
+    out[i]=cnt>=minp?sum/cnt:NaN;
+  }
+  return out;
+}
+// каузальный перцентиль в СКОЛЬЗЯЩЕМ окне (не expanding!) — конвенция формы F.
+// значение ранжируется строго против ПРЕДЫДУЩИХ точек внутри окна.
+function causalPctlRolling(vals, window, minp){
+  const n=vals.length, out=new Array(n).fill(NaN);
+  for(let i=0;i<n;i++){
+    if(Number.isNaN(vals[i])) continue;
+    const lo=Math.max(0,i-window+1);
+    let cntLess=0, cntTot=0;
+    for(let j=lo;j<i;j++){ const y=vals[j]; if(!Number.isNaN(y)){cntTot++; if(y<vals[i])cntLess++;} }
+    if(cntTot>=minp) out[i]=100*cntLess/cntTot;
+  }
+  return out;
+}
+// перцентиль по всей истории (для A4-компонентов на дневной оси)
+function causalPctlRoll(vals, window, minp){
+  return causalPctlRolling(vals, window, minp);
+}
+// разница за N шагов (накопленное ужесточение ставки)
+function diffN(vals, n){
+  const out=new Array(vals.length).fill(NaN);
+  for(let i=n;i<vals.length;i++){
+    if(!Number.isNaN(vals[i])&&!Number.isNaN(vals[i-n])) out[i]=vals[i]-vals[i-n];
+  }
+  return out;
+}
+function lastValid(arr){ for(let i=arr.length-1;i>=0;i--) if(!Number.isNaN(arr[i])) return arr[i]; return NaN; }
+
+// ================= ЗАГРУЗКА (тот же ROUTES-слой, что на bottom) =================
+const ROUTES = [
+  [u => "/.netlify/functions/proxy?url=" + encodeURIComponent(u), 26000, "свой прокси"],
+  [u => u, 6000, "напрямую"],
+  [u => "https://api.allorigins.win/raw?url=" + encodeURIComponent(u), 30000, "allorigins"],
+  [u => "https://api.codetabs.com/v1/proxy?quest=" + encodeURIComponent(u), 20000, "codetabs"],
+];
+async function fetchWithTimeout(url, ms){
+  const ctl=new AbortController(); const timer=setTimeout(()=>ctl.abort(),ms);
+  try{ const r=await fetch(url,{cache:"no-store",signal:ctl.signal});
+    if(!r.ok) throw new Error("HTTP "+r.status); return await r.text();
+  } finally { clearTimeout(timer); }
+}
+function srcStatus(id,state,detail){
+  const el=document.getElementById("src-"+id); if(!el) return;
+  el.className="src "+state;
+  const d=document.getElementById("src-"+id+"-d"); if(d) d.textContent=detail||"";
+}
+const deadRoutes=new Set();
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function fetchText(url, log, label, srcId){
+  for(let i=0;i<ROUTES.length;i++){
+    const [wrap,ms,rname]=ROUTES[i];
+    if(deadRoutes.has(rname)) continue;
+    if(srcId) srcStatus(srcId,"loading",rname+"…");
+    try{
+      const t=await fetchWithTimeout(wrap(url),ms);
+      if(t.length<80) throw new Error("пустой ответ");
+      if(label) log("✓ "+label+" ("+rname+")");
+      return t;
+    }catch(e){
+      const why=e.name==="AbortError"?"таймаут":e.message;
+      if(rname==="свой прокси" && /404/.test(why)){ deadRoutes.add(rname); log("· свой прокси не задеплоен (404)"); }
+      else if(label) log("… "+label+": "+rname+" ("+why+")");
+      await sleep(250);
+    }
+  }
+  if(label) log("✗ "+label+": все маршруты исчерпаны");
+  return null;
+}
+// FRED fredgraph.csv парсер (идентичен bottom.html)
+function parseFred(text){
+  const t=[],v=[]; const lines=text.split("\n");
+  for(let i=1;i<lines.length;i++){
+    const p=lines[i].split(",");
+    if(p.length<2) continue;
+    const d=new Date(p[0].trim()); const raw=p[1].trim(); const x=parseFloat(raw);
+    if(!isNaN(d)&&raw!=="."&&isFinite(x)){ t.push(d); v.push(x); }
+  }
+  return {t,v};
+}
+async function loadFred(id, log, label, srcId){
+  const t=await fetchText("https://fred.stlouisfed.org/graph/fredgraph.csv?id="+id, log, label, srcId);
+  if(!t) return null;
+  const s=parseFred(t);
+  return s.v.length? s : null;
+}
+
+// ================= КЛАССИФИКАЦИЯ СЛОТА (способ В) =================
+function levelClass(v){
+  if(Number.isNaN(v)) return "lvl-dead";
+  if(v>85) return "lvl-red";
+  if(v>=60) return "lvl-yellow";
+  return "lvl-gray";
+}
+
+// ================= РАСЧЁТ =================
+async function run(){
+  const log=(m)=>{ document.getElementById("log").textContent+=m+"\n"; };
+  const st=document.getElementById("status");
+  st.className=""; st.innerHTML="Загрузка данных…<small>тяну FRED-ряды Блока A</small>";
+  deadRoutes.clear();
+
+  // ---- A1: маржинальный долг (квартальный уровень) → YoY → перцентиль окно 60 кв.
+  let a1pctl=NaN;
+  const a1=await loadFred(CFG.FRED_A1, log, "A1 маржа", "a1");
+  if(a1){
+    const yoy=[];
+    for(let i=0;i<a1.v.length;i++){ yoy.push(i>=4 ? (a1.v[i]/a1.v[i-4]-1)*100 : NaN); }
+    const p=causalPctlRolling(yoy, 60, 15);
+    a1pctl=lastValid(p);
+    srcStatus("a1","ok","готово");
+  } else srcStatus("a1","fail","нет данных");
+
+  // ---- A2: аллокация → остаток от 15л(60кв)-средней → перцентиль окно 100 кв. (форма F)
+  let a2pctl=NaN;
+  const a2=await loadFred(CFG.FRED_A2, log, "A2 аллокация", "a2");
+  if(a2){
+    const ma=rollMean(a2.v, CFG.MA_QUARTERS, 40);
+    const res=a2.v.map((x,i)=> Number.isNaN(ma[i])?NaN:x-ma[i]);
+    const p=causalPctlRolling(res, CFG.PCTL_WINDOW, CFG.PCTL_MINP);
+    a2pctl=lastValid(p);
+    srcStatus("a2","ok","готово");
+  } else srcStatus("a2","fail","нет данных");
+
+  // ---- A4: реальная ставка (накопл. ужесточение) + net liquidity, среднее перцентилей
+  let a4pctl=NaN, a4parts=[];
+  const rate=await loadFred(CFG.FRED_A4_RATE, log, "A4 ставка", "a4");
+  if(rate){
+    const dd=diffN(rate.v, CFG.A4_RATE_WIN);
+    const p=causalPctlRolling(dd, CFG.A4_PCTL_WIN, 250);
+    const lv=lastValid(p); if(!Number.isNaN(lv)) a4parts.push(lv);
+  }
+  const walcl=await loadFred(CFG.FRED_A4_WALCL, log, "A4 ликвидность", null);
+  if(walcl){
+    // net liquidity proxy: изменение баланса ФРС за 63 дня, перцентиль
+    const dd=diffN(walcl.v, 63);
+    const p=causalPctlRolling(dd, 260, 60);
+    const lv=lastValid(p);
+    // net liquidity: рост ликвидности = топливо есть = НИЗКИЙ вклад в исчерпание → инвертируем
+    if(!Number.isNaN(lv)) a4parts.push(100-lv);
+  }
+  if(a4parts.length){ a4pctl=a4parts.reduce((s,x)=>s+x,0)/a4parts.length; srcStatus("a4","ok","готово"); }
+  else srcStatus("a4","fail","нет данных");
+
+  // ---- Regime Score = среднее доступных слотов (агрегация из заморозки: mean)
+  const slots=[["A1","маржинальный долг · плечо",a1pctl],
+               ["A2","аллокация домохозяйств",a2pctl],
+               ["A4","финансовые условия",a4pctl]];
+  const avail=slots.map(s=>s[2]).filter(x=>!Number.isNaN(x));
+  const score = avail.length ? avail.reduce((s,x)=>s+x,0)/avail.length : NaN;
+
+  renderSlots(slots);
+  renderRegime(score);
+  renderStatus(score, avail.length);
+
+  document.getElementById("asof").textContent =
+    "обновлено " + new Date().toISOString().slice(0,10) + " · слотов " + avail.length + "/3";
+}
+
+function renderSlots(slots){
+  const host=document.getElementById("slots"); host.innerHTML="";
+  for(const [name,desc,val] of slots){
+    const cls=levelClass(val);
+    const w=Number.isNaN(val)?0:Math.max(0,Math.min(100,val));
+    const row=document.createElement("div");
+    row.className="slot-row "+cls;
+    row.innerHTML=
+      '<div><div class="sname"><span class="smark"></span>'+name+' · '+desc+'</div>'+
+      '<div class="sbar"><div class="sfill" style="width:'+w+'%"></div></div></div>'+
+      '<div class="sval">'+(Number.isNaN(val)?"н/д":Math.round(val))+'</div>';
+    host.appendChild(row);
+  }
+}
+function renderRegime(score){
+  const thr=CFG.THETA_A;
+  document.getElementById("regimethr").style.left=thr+"%";
+  document.getElementById("lbl-thr").style.left=thr+"%";
+  document.getElementById("lbl-thr").textContent="θ "+thr.toFixed(1);
+  if(Number.isNaN(score)){
+    document.getElementById("lbl-score").textContent="н/д";
+    return;
+  }
+  const w=Math.max(0,Math.min(100,score));
+  document.getElementById("regimefill").style.width=w+"%";
+  document.getElementById("regimefill").style.background = score>=thr ? "var(--warn-dot)" : "#B4B4B4";
+  const ls=document.getElementById("lbl-score");
+  ls.style.left=w+"%"; ls.textContent=score.toFixed(1);
+  ls.style.color = score>=thr ? "var(--warn)" : "var(--ink2)";
+}
+function renderStatus(score, navail){
+  const st=document.getElementById("status");
+  if(Number.isNaN(score)){
+    st.className="neutral";
+    st.innerHTML="Нет данных<small>ни один слот Блока A не загрузился — см. источники выше</small>";
+    return;
+  }
+  const yellow = score>=CFG.THETA_A;
+  st.className = yellow ? "yellow" : "neutral";
+  const head = yellow ? "ЖЁЛТОЕ · режим взведён" : "НЕЙТРАЛЬНО · режим спокоен";
+  st.innerHTML = head +
+    "<small>Regime Score "+score.toFixed(1)+" · θ_A "+CFG.THETA_A.toFixed(1)+
+    " · агрегация: среднее · слотов "+navail+"/3</small>";
+}
+
+async function runSafe(){
+  try{ await run(); }
+  catch(e){
+    document.getElementById("status").className="neutral";
+    document.getElementById("status").textContent="Ошибка: "+e.message;
+    document.getElementById("log").textContent += "✗ EXCEPTION: "+(e.stack||e.message)+"\n";
+  }
+}
+document.getElementById("refresh").addEventListener("click", runSafe);
+runSafe();
+</script>
+<script>document.getElementById('yr').textContent=new Date().getFullYear();</script>
+</body>
+</html>

@@ -3,117 +3,159 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Top of the Top — детектор вершины</title>
+<title>Top of the Top — индикатор режима рыночной вершины</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-/* ===== Metro-стиль · Barbell ===== */
+/* ===== Metro-стиль · Sentimentus ===== */
 :root{
   --sans:'Space Grotesk',system-ui,sans-serif;
   --monof:'JetBrains Mono',monospace;
-  --ink:#1a1a1a; --ink2:#767676; --muted:#9a9a9a; --line:#E4E4E4; --rule:#EDEDED;
+  --ink:#1a1a1a; --ink2:#5C5C5C; --muted:#8E8E8E; --line:#E4E4E4;
   --card:#F8F8F8;
   --blue:#00A4EF; --violet:#7550BE; --yellow:#FFB900;
   --green:#7FBA00; --green-ink:#4C8A00;
-  --warn:#C29B00; --warn-dot:#F0B400;
-  --red:#D24726;
-  --marker:#0084C0;
+  --warn:#9A7B00; --warn-dot:#F0B400;
+  --red:#D24726; --red-ink:#B83A1C;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#fff;color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;padding:34px 20px;max-width:1000px;margin:0 auto}
+body{background:#fff;color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;padding:34px 20px 40px;max-width:1000px;margin:0 auto}
 .mono{font-family:var(--monof)}
+.num{font-family:var(--monof);font-variant-numeric:tabular-nums}
 
-.back{display:inline-block;font-family:var(--monof);font-size:11px;color:var(--muted);text-decoration:none;margin-bottom:14px}
-.back:hover{color:var(--ink)}
+nav.sitenav{display:flex;gap:18px;margin-bottom:14px;flex-wrap:wrap}
+nav.sitenav a{text-decoration:none;font-family:var(--monof);font-size:11px;color:var(--muted);display:inline-flex;align-items:center;gap:7px}
+nav.sitenav a:hover{color:var(--ink)}
+nav.sitenav a.active{color:var(--ink);font-weight:500}
+nav.sitenav a.active::before{content:'';width:8px;height:8px;background:var(--yellow);flex:none}
 
-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;border:none;padding:0}
-.hleft{display:flex;align-items:center;gap:10px}
+header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:12px;flex-wrap:wrap;gap:10px}
+.hleft{display:flex;align-items:center;gap:12px}
 .hbadge{width:30px;height:30px;background:var(--yellow);color:#1a1a1a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex:none}
 h1{font-size:22px;font-weight:300;letter-spacing:.01em}
-#asof{font-size:11px;color:var(--muted)}
-button{font-family:var(--sans);font-size:13px;font-weight:700;padding:6px 16px;border:1px solid var(--warn);background:transparent;color:var(--warn);cursor:pointer;border-radius:0;transition:background .15s,color .15s}
-button:hover{background:var(--warn);color:#fff}
-button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.hsub{font-family:var(--monof);font-size:10.5px;color:var(--muted);margin-top:2px}
+.hright{display:flex;align-items:center;gap:12px}
+#asof{font-family:var(--monof);font-size:11px;color:var(--muted)}
+button{font-family:var(--sans);font-size:13px;font-weight:700;padding:6px 16px;border:1px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer;border-radius:0;transition:background .15s,color .15s}
+button:hover{background:var(--ink);color:#fff}
+button:focus-visible{outline:2px solid var(--yellow);outline-offset:2px}
 
-.rule4{height:2px;background:linear-gradient(to right,var(--blue) 0 25%,var(--green) 25% 50%,var(--yellow) 50% 75%,var(--violet) 75% 100%);margin-bottom:16px}
+.rule4{height:2px;background:linear-gradient(to right,var(--blue) 0 25%,var(--green) 25% 50%,var(--yellow) 50% 75%,var(--violet) 75% 100%);margin-bottom:20px}
 
-/* статус: тонкий кант слева */
-#status{border-left:3px solid #C8C8C8;padding:10px 16px;font-size:16px;font-weight:700;margin-bottom:10px;background:none;border-radius:0;text-align:left;letter-spacing:0}
-#status.yellow{border-left-color:var(--warn-dot);color:var(--warn);background:none}
-#status.neutral{border-left-color:#C8C8C8;color:var(--ink2);background:none}
-#status small{display:block;font-weight:400;font-size:12px;margin-top:4px;color:var(--ink2);font-family:var(--monof);letter-spacing:0}
+/* метка секции */
+.seclabel{font-family:var(--monof);font-size:10px;color:var(--muted);letter-spacing:.08em;margin-bottom:10px}
 
-/* красный контур — честная плашка "ожидает данных" */
-#redrow{border-left:3px solid #C8C8C8;padding:9px 16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;background:var(--card)}
-#redrow .lbl{font-family:var(--monof);font-size:11px;color:var(--ink2)}
-#redrow .st{font-family:var(--monof);font-size:10.5px;color:var(--red)}
+/* ---- состояние индикатора ---- */
+.statusgrid{display:grid;grid-template-columns:1fr 300px;gap:24px;margin-bottom:26px;align-items:start}
+@media(max-width:760px){.statusgrid{grid-template-columns:1fr}}
+#status{border-left:3px solid #C8C8C8;padding:12px 18px}
+#status .state{font-size:20px;font-weight:700;letter-spacing:.01em}
+#status .expl{font-size:12.5px;color:var(--ink2);margin-top:6px;line-height:1.55}
+#status.yellow{border-left-color:var(--warn-dot)}
+#status.yellow .state{color:var(--warn)}
+#status.neutral{border-left-color:#C8C8C8}
+#status.neutral .state{color:var(--ink2)}
+#status .metrics{display:flex;gap:28px;margin-top:12px}
+#status .metric .mv{font-family:var(--monof);font-size:22px;font-weight:500;font-variant-numeric:tabular-nums}
+#status .metric .ml{font-family:var(--monof);font-size:9.5px;color:var(--muted);letter-spacing:.05em;margin-top:2px}
 
-/* панели */
-.grid{display:flex;flex-direction:column;gap:26px;margin-bottom:26px}
-.panel{background:none;border:none;border-radius:0;padding:0}
-.panel h2{font-size:13px;letter-spacing:.01em;color:var(--ink);margin-bottom:12px;font-weight:700;display:flex;align-items:center;position:relative;padding-bottom:10px}
+/* легенда состояний */
+.legend{border-left:3px solid var(--line);padding:2px 0 2px 18px}
+.legend .lrow{display:flex;gap:10px;align-items:baseline;padding:6px 0}
+.legend .lrow + .lrow{border-top:1px solid var(--line)}
+.legend .sq{width:9px;height:9px;flex:none;position:relative;top:1px}
+.legend .lname{font-weight:700;font-size:12px;width:92px;flex:none}
+.legend .ldef{font-size:11.5px;color:var(--ink2);line-height:1.5}
+.legend .off .lname,.legend .off .ldef{color:var(--muted)}
+
+/* ---- шкала ---- */
+.scalewrap{margin-bottom:30px}
+.scale{position:relative;height:8px;background:#EDEDED;margin-top:22px}
+.scale .fill{position:absolute;left:0;top:0;height:8px;background:#C8C8C8}
+.scale .thr{position:absolute;top:-5px;height:18px;width:2px;background:var(--ink)}
+.scale .thr .tl{position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-family:var(--monof);font-size:9.5px;color:var(--ink);white-space:nowrap}
+.scale .cur{position:absolute;top:-5px;height:18px;width:2px;background:var(--warn-dot)}
+.scale .cur .tl{position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-family:var(--monof);font-size:10.5px;font-weight:500;color:var(--warn);white-space:nowrap}
+.scaleticks{position:relative;height:20px;font-family:var(--monof);font-size:9px;color:var(--muted)}
+.scaleticks i{position:absolute;top:0;width:1px;height:5px;background:#C4C4C4}
+.scaleticks b{position:absolute;top:8px;transform:translateX(-50%);font-weight:400}
+.scalenote{font-size:11px;color:var(--ink2);margin-top:8px;line-height:1.5}
+
+/* ---- компоненты ---- */
+.panel{margin-bottom:30px}
+.panel h2{font-size:13px;font-weight:700;display:flex;align-items:center;position:relative;padding-bottom:10px;margin-bottom:4px}
 .panel h2::before{content:'';width:10px;height:10px;background:var(--blue);margin-right:8px;flex:none}
 .panel h2::after{content:'';position:absolute;left:0;bottom:0;width:64px;height:2px;background:var(--blue)}
-.panel h2 .h2-sub{letter-spacing:0;font-weight:400;color:var(--muted);margin-left:6px}
+.panel h2.green::before,.panel h2.green::after{background:var(--green)}
+.panel h2.violet::before,.panel h2.violet::after{background:var(--violet)}
+.panel .psub{font-size:11.5px;color:var(--ink2);margin-bottom:14px;line-height:1.5}
 
-/* полоса режима */
-#regimewrap{margin-bottom:8px}
-#regimebar{position:relative;height:8px;background:#ecece6;border-radius:0}
-#regimebar .fill{position:absolute;left:0;top:0;height:8px;background:var(--warn-dot);width:0}
-#regimebar .thr{position:absolute;top:-4px;width:2px;height:16px;background:var(--ink);box-shadow:0 0 0 2px #fff}
-#regimelabels{position:relative;height:14px;font-family:var(--monof);font-size:9px;color:var(--muted);margin-top:3px}
-#regimelabels span{position:absolute;transform:translateX(-50%)}
+.comp-head,.comp-row{display:grid;grid-template-columns:250px 1fr 190px 70px;gap:16px;align-items:center}
+@media(max-width:760px){.comp-head{display:none}.comp-row{grid-template-columns:1fr 70px;row-gap:6px}
+  .comp-row .cdesc{grid-column:1 / -1}.comp-row .cbar{grid-column:1 / -1}}
+.comp-head{font-family:var(--monof);font-size:9.5px;color:var(--muted);letter-spacing:.06em;padding:0 0 8px;border-bottom:1px solid var(--line)}
+.comp-row{padding:12px 0;border-bottom:1px solid var(--line)}
+.comp-row .cname{display:flex;align-items:center;gap:9px;font-weight:700;font-size:13px}
+.comp-row .cname .sq{width:9px;height:9px;flex:none;background:#C8C8C8}
+.comp-row.hot .cname .sq{background:var(--red)}
+.comp-row.mid .cname .sq{background:var(--warn-dot)}
+.comp-row .cname small{display:block;font-weight:400;font-family:var(--monof);font-size:9.5px;color:var(--muted);letter-spacing:.03em;margin-top:2px}
+.comp-row .cdesc{font-size:11.5px;color:var(--ink2);line-height:1.5}
+.comp-row .cbar{height:5px;background:#EDEDED;position:relative}
+.comp-row .cbar .f{position:absolute;left:0;top:0;height:5px;background:#C8C8C8}
+.comp-row.hot .cbar .f{background:var(--red)}
+.comp-row.mid .cbar .f{background:var(--warn-dot)}
+.comp-row .cbar .t60,.comp-row .cbar .t85{position:absolute;top:-2px;height:9px;width:1px;background:#B0B0B0}
+.comp-row .cbar .t60{left:60%}.comp-row .cbar .t85{left:85%}
+.comp-row .cval{font-family:var(--monof);font-size:17px;font-weight:500;text-align:right;font-variant-numeric:tabular-nums}
+.comp-row.hot .cval{color:var(--red-ink)}
+.comp-row.mid .cval{color:var(--warn)}
+.comp-row .cval small{display:block;font-size:9px;font-weight:400;color:var(--muted);letter-spacing:.04em}
+.comp-row .cval.dead{font-size:12px;color:var(--muted);font-weight:400}
+.comp-note{font-size:11px;color:var(--muted);margin-top:10px;font-family:var(--monof)}
 
-/* слоты */
-.slot-row{display:grid;grid-template-columns:1fr 82px;align-items:start;gap:16px;padding:12px 0 12px 14px;border-left:3px solid #C8C8C8;border-bottom:1px solid var(--rule);margin-bottom:2px}
-.slot-row:last-child{border-bottom:none}
-.slot-row .sname{font-size:13.5px;font-weight:700;display:flex;align-items:center;gap:9px}
-.slot-row .smark{width:9px;height:9px;flex:none;background:#C8C8C8}
-.slot-row .sdesc{font-family:var(--monof);font-size:10.5px;color:var(--muted);margin-top:5px;line-height:1.5}
-.slot-row .sbar{height:5px;background:#ecece6;margin-top:8px;position:relative}
-.slot-row .sbar .sfill{height:5px;background:#C8C8C8;width:0}
-.slot-row .sval{text-align:right;font-family:var(--monof);font-size:16px;font-weight:500}
-/* способ В: цвет по уровню */
-.lvl-red .smark,.lvl-red .sfill{background:var(--red)}
-.lvl-red{border-left-color:var(--red)}
-.lvl-red .sval{color:var(--red)}
-.lvl-yellow .smark,.lvl-yellow .sfill{background:var(--warn-dot)}
-.lvl-yellow{border-left-color:var(--warn-dot)}
-.lvl-yellow .sval{color:var(--warn)}
-.lvl-gray .smark,.lvl-gray .sfill{background:#B4B4B4}
-.lvl-gray{border-left-color:#C8C8C8}
-.lvl-gray .sval{color:var(--ink2)}
-.lvl-dead .sval{color:var(--muted);font-size:12px}
+/* ---- модуль B ---- */
+.modb{border-left:3px solid #C8C8C8;padding:12px 18px;background:var(--card)}
+.modb .mtitle{font-weight:700;font-size:13px}
+.modb .mstate{font-family:var(--monof);font-size:11px;color:var(--red-ink);margin-left:10px}
+.modb .mdesc{font-size:11.5px;color:var(--ink2);margin-top:6px;line-height:1.55}
+.modb .mlist{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:12px}
+@media(max-width:700px){.modb .mlist{grid-template-columns:1fr}}
+.modb .mitem{display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--line);padding:7px 10px;font-family:var(--monof);font-size:10.5px}
+.modb .mitem .on{color:var(--green-ink)}
+.modb .mitem .offl{color:var(--red-ink)}
+.modb .mitem .part{color:var(--warn)}
 
-/* чипы источников */
-#sources{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:16px}
-@media(max-width:560px){#sources{grid-template-columns:repeat(1,1fr)}}
-.src{display:flex;align-items:center;gap:8px;background:var(--card);border:none;border-radius:0;padding:8px 10px;font-size:12px;font-weight:500}
-.src .dot{width:8px;height:8px;border-radius:0;background:var(--muted);flex:none}
-.src.loading .dot{background:var(--warn-dot);animation:pulse 1s infinite}
-.src.ok .dot{background:var(--green);animation:none}
-.src.fail .dot{background:var(--red);animation:none}
-.src small{display:block;color:var(--muted);font-size:10.5px;font-weight:400;font-family:var(--monof)}
+/* ---- источники ---- */
+.src-head,.src-row{display:grid;grid-template-columns:230px 1fr 130px 130px 110px;gap:14px;align-items:center}
+@media(max-width:760px){.src-head{display:none}.src-row{grid-template-columns:1fr 110px}}
+.src-head{font-family:var(--monof);font-size:9.5px;color:var(--muted);letter-spacing:.06em;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.src-row{padding:10px 0;border-bottom:1px solid var(--line);font-size:12px}
+.src-row .sname{font-weight:700}
+.src-row .sdet{font-family:var(--monof);font-size:10.5px;color:var(--ink2)}
+.src-row .sstate{display:flex;align-items:center;gap:7px;font-family:var(--monof);font-size:10.5px}
+.src-row .dot{width:8px;height:8px;flex:none;background:var(--muted)}
+.src-row.loading .dot{background:var(--warn-dot);animation:pulse 1s infinite}
+.src-row.ok .dot{background:var(--green)}
+.src-row.fail .dot{background:var(--red)}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+@media (prefers-reduced-motion: reduce){.src-row.loading .dot{animation:none}}
 
-/* ограничения прибора */
-#limits{border-left:3px solid var(--violet);padding:11px 15px;background:none;margin-bottom:26px}
-#limits .lh{font-family:var(--monof);font-size:10px;color:var(--violet);letter-spacing:.05em;margin-bottom:6px}
-#limits p{font-size:12px;line-height:1.6;color:var(--ink2)}
+/* крыло-разделитель */
+.wing{display:flex;align-items:center;gap:8px;margin:0 0 26px}
+.wing .ln{flex:1;height:1px;background:var(--line)}
+.wing span{width:7px;height:7px;flex:none}
+.wing .b{background:var(--blue)}
+.wing .v{background:var(--violet)}
 
-/* блок B честные чипы */
-#blockb{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:26px;font-family:var(--monof);font-size:11px}
-@media(max-width:560px){#blockb{grid-template-columns:repeat(2,1fr)}}
-.bchip{background:var(--card);padding:8px 10px;display:flex;justify-content:space-between;align-items:center}
-.bchip .bs-ok{color:var(--green-ink)}
-.bchip .bs-no{color:var(--red)}
-.bchip .bs-part{color:var(--warn)}
+/* методология */
+.method p{font-size:12px;color:var(--ink2);line-height:1.65;margin-bottom:8px}
+.method .disclaimer{font-family:var(--monof);font-size:10.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:10px;margin-top:12px;line-height:1.6}
 
 #log{display:none}
 
-/* подвал */
-.foot{margin-top:26px}
+.foot{margin-top:30px;display:none}
 .footline{display:flex;justify-content:space-between;align-items:center;margin-top:16px}
 .fbrand{display:flex;align-items:center;gap:9px}
 .fmark{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:1.5px;width:18px;height:18px}
@@ -125,65 +167,112 @@ button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 </style>
 </head>
 <body>
-<a class="back" href="index.html">← все инструменты</a>
+<nav class="sitenav">
+  <a href="/">Главная</a>
+  <a href="/bottom">Индикатор капитуляции</a>
+  <a href="/gex.html">GEX — дилерская гамма</a>
+  <a href="/tott.html" class="active">Top of the Top</a>
+</nav>
 <header>
   <span class="hleft">
     <span class="hbadge">T</span>
-    <h1>Top of the Top</h1>
+    <span>
+      <h1>Top of the Top</h1>
+      <div class="hsub">ИНДИКАТОР РЕЖИМА РЫНОЧНОЙ ВЕРШИНЫ · NASDAQ-100</div>
+    </span>
   </span>
-  <div><span id="asof" class="mono">данные загружаются…</span>
-  <button id="refresh" style="margin-left:12px">Обновить</button></div>
+  <div class="hright">
+    <span id="asof">данные не загружены</span>
+    <button id="refresh">Обновить данные</button>
+  </div>
 </header>
 
 <div class="rule4"></div>
 
-<div id="status">Загрузка данных…<small>обычно 5–20 секунд; состояние источников — ниже</small></div>
-<div id="redrow"><span class="lbl">Красный контур · распределение</span><span class="st">ожидает данных B1 · B3</span></div>
-
-<div id="sources">
-  <div class="src" id="src-a1"><span class="dot"></span><span>A1 маржа<small id="src-a1-d">ожидание</small></span></div>
-  <div class="src" id="src-a2"><span class="dot"></span><span>A2 аллокация<small id="src-a2-d">ожидание</small></span></div>
-  <div class="src" id="src-a4"><span class="dot"></span><span>A4 условия<small id="src-a4-d">ожидание</small></span></div>
-</div>
-
-<div class="grid">
-  <div class="panel">
-    <h2>Медленный контур <span class="h2-sub">— режим исчерпания топлива (Блок A)</span></h2>
-    <div id="regimewrap">
-      <div id="regimebar">
-        <div class="fill" id="regimefill"></div>
-        <div class="thr" id="regimethr"></div>
-      </div>
-      <div id="regimelabels">
-        <span id="lbl-thr">θ —</span>
-        <span id="lbl-score" style="color:var(--warn)">—</span>
-      </div>
+<div class="statusgrid">
+  <div>
+    <div class="seclabel">ТЕКУЩЕЕ СОСТОЯНИЕ</div>
+    <div id="status" class="neutral">
+      <div class="state">Загрузка данных</div>
+      <div class="expl">Выполняется запрос к внешним источникам. Статус каждого источника отображается в разделе «Источники данных».</div>
     </div>
   </div>
-
-  <div class="panel">
-    <h2>Слоты Блока A <span class="h2-sub">— перцентиль 0–100</span></h2>
-    <div id="slots"></div>
+  <div>
+    <div class="seclabel">СОСТОЯНИЯ ИНДИКАТОРА</div>
+    <div class="legend">
+      <div class="lrow"><span class="sq" style="background:#C8C8C8"></span><span class="lname">Нейтральное</span><span class="ldef">композитный индекс ниже порога</span></div>
+      <div class="lrow"><span class="sq" style="background:var(--warn-dot)"></span><span class="lname">Жёлтое</span><span class="ldef">индекс не ниже порога: структурные условия, исторически предшествующие вершинам</span></div>
+      <div class="lrow off"><span class="sq" style="background:#E0E0E0"></span><span class="lname">Красное</span><span class="ldef">подтверждённая фаза распределения — модуль B, не активен</span></div>
+    </div>
   </div>
 </div>
 
-<div id="limits">
-  <div class="lh">ОГРАНИЧЕНИЯ ПРИБОРА · честно</div>
-  <p>Жёлтое сейчас частично отражает эпоху 2020-х (кластеризация, флаг era_clustering).
-     Вершина 2000 полным составом не покрыта — A1 берётся с середины истории.
-     Красный контур не собран: нет B1 (широта) и B3 (P/C).</p>
+<div class="scalewrap">
+  <div class="seclabel">КОМПОЗИТНЫЙ ИНДЕКС · ШКАЛА 0–100</div>
+  <div class="scale" id="scale">
+    <div class="fill" id="scale-fill" style="width:0%"></div>
+    <div class="thr" id="scale-thr" style="left:70.9%"><span class="tl">порог 70.9</span></div>
+  </div>
+  <div class="scaleticks" id="scale-ticks"></div>
+  <div class="scalenote">Композитный индекс — среднее трёх компонентов, каждый выражен историческим перцентилем (0–100).
+  Порог 70.9 соответствует 15% наиболее высоких значений индекса за период наблюдения (2001 — наст. время).</div>
 </div>
 
 <div class="panel">
-  <h2>Красный контур <span class="h2-sub">— Блок B, триггер распределения</span></h2>
-  <div id="blockb">
-    <div class="bchip"><span>B1 широта</span><span class="bs-no">нет</span></div>
-    <div class="bchip"><span>B3 P/C</span><span class="bs-no">нет</span></div>
-    <div class="bchip"><span>B4 VIX/SKEW</span><span class="bs-ok">есть</span></div>
-    <div class="bchip"><span>B5 кредит</span><span class="bs-ok">есть</span></div>
-    <div class="bchip"><span>B6 носитель</span><span class="bs-ok">есть</span></div>
-    <div class="bchip"><span>B2 short vol</span><span class="bs-part">част.</span></div>
+  <h2>Компоненты индекса</h2>
+  <div class="psub">Каждый компонент — исторический перцентиль показателя: 0 — минимум, 100 — максимум за окно наблюдения. Значения 85 и выше соответствуют историческим экстремумам.</div>
+  <div class="comp-head"><span>КОМПОНЕНТ</span><span>ОПРЕДЕЛЕНИЕ</span><span>ПЕРЦЕНТИЛЬ 0–100</span><span style="text-align:right">ЗНАЧЕНИЕ</span></div>
+  <div id="components"></div>
+  <div class="comp-note">деления на шкалах: 60 — повышенный уровень · 85 — экстремум</div>
+</div>
+
+<div class="panel">
+  <h2 class="green">Модуль подтверждения — Блок B</h2>
+  <div class="modb">
+    <div><span class="mtitle">Фаза распределения</span><span class="mstate">НЕ АКТИВЕН</span></div>
+    <div class="mdesc">Модуль фиксирует переход из структурного режима в подтверждённую фазу распределения (красное состояние).
+    Для активации требуются источники данных B1 (широта рынка) и B3 (коэффициенты put/call).</div>
+    <div class="mlist">
+      <div class="mitem"><span>B1 · широта рынка</span><span class="offl">нет данных</span></div>
+      <div class="mitem"><span>B3 · put/call</span><span class="offl">нет данных</span></div>
+      <div class="mitem"><span>B4 · VIX / SKEW</span><span class="on">готов</span></div>
+      <div class="mitem"><span>B5 · кредитный спред</span><span class="on">готов</span></div>
+      <div class="mitem"><span>B6 · ценовой триггер</span><span class="on">готов</span></div>
+      <div class="mitem"><span>B2 · короткие продажи</span><span class="part">частично</span></div>
+    </div>
   </div>
+</div>
+
+<div class="panel">
+  <h2>Источники данных</h2>
+  <div class="src-head"><span>РЯД</span><span>ПРОВАЙДЕР</span><span>ЧАСТОТА</span><span>ЛАГ ПУБЛИКАЦИИ</span><span>СТАТУС</span></div>
+  <div class="src-row" id="src-a1">
+    <span class="sname">A1 · Маржинальный долг</span>
+    <span class="sdet">FRED · Z.1 Financial Accounts</span>
+    <span class="sdet">квартал</span><span class="sdet">~10 недель</span>
+    <span class="sstate"><span class="dot"></span><span id="src-a1-d">—</span></span>
+  </div>
+  <div class="src-row" id="src-a2">
+    <span class="sname">A2 · Аллокация домохозяйств</span>
+    <span class="sdet">FRED · Z.1 Financial Accounts</span>
+    <span class="sdet">квартал</span><span class="sdet">~10 недель</span>
+    <span class="sstate"><span class="dot"></span><span id="src-a2-d">—</span></span>
+  </div>
+  <div class="src-row" id="src-a4">
+    <span class="sname">A4 · Финансовые условия</span>
+    <span class="sdet">FRED · DFII10, WALCL, TGA, RRP</span>
+    <span class="sdet">день / неделя</span><span class="sdet">1–7 дней</span>
+    <span class="sstate"><span class="dot"></span><span id="src-a4-d">—</span></span>
+  </div>
+</div>
+
+<div class="wing"><div class="ln"></div><span class="b"></span><span class="v"></span><div class="ln"></div></div>
+
+<div class="panel method">
+  <h2 class="violet">Методология и ограничения</h2>
+  <p>Индикатор классифицирует структурный режим рынка по трём медленным компонентам (маржинальное кредитование, аллокация домохозяйств в акции, финансовые условия) и не предназначен для выбора момента сделки. Класс покрытия — эндогенные вершины с фазой распределения; внешние шоки не входят в область применения.</p>
+  <p>Известные ограничения текущей версии: жёлтое состояние на интервале 2020 — наст. время частично отражает особенности эпохи, а не близость вершины (концентрация срабатываний зафиксирована в конфигурации); история компонента A1 начинается с 1997 года, поэтому эпизод 2000 года полным составом не покрывается; модуль подтверждения (Блок B) не активен до подключения источников B1 и B3.</p>
+  <div class="disclaimer">Материалы страницы носят информационно-аналитический характер и не являются инвестиционной рекомендацией. Расчёт выполняется в браузере по открытым данным; методология и параметры зафиксированы в спецификации v1.4.1.</div>
 </div>
 
 <div id="log"></div>
@@ -200,244 +289,324 @@ button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 </div>
 
 <script>
-// ================= КОНФИГ БЛОКА A (заморожен) =================
-// Источник истины: tott_config_blockA.json (Colab-заморозка).
-// θ_A и era_clustering — из заморозки; страница НЕ пересчитывает пороги,
-// а воспроизводит замороженные конвенции на живых данных.
+// ================= КОНФИГ БЛОКА A (замороженный, tott_config_blockA.json) =================
 const CFG = {
-  THETA_A: 70.9,           // порог жёлтого (prevalence 15%)
-  MA_QUARTERS: 60,         // 15-летняя средняя для формы F (A2)
-  PCTL_WINDOW: 100,        // окно перцентиля 25 лет = 100 кварталов
-  PCTL_MINP: 25,           // минимум точек в окне
-  FRED_A1: "BOGZ1FL663067003Q",   // маржинальный долг брокеров (Z.1, квартальный)
-  FRED_A2: "BOGZ1FL153064486Q",   // доля акций в активах домохозяйств (Z.1)
-  FRED_A4_RATE: "DFII10",         // реальная ставка 10Y TIPS
-  FRED_A4_WALCL: "WALCL",         // баланс ФРС (для net liquidity)
-  A4_RATE_WIN: 504,        // окно накопленного ужесточения (дни)
-  A4_PCTL_WIN: 1260,       // окно перцентиля A4 (≈5 лет торговых дней)
+  THETA_A: 70.9,
+  A2_MA_Q: 60, A2_PCTL_WIN_Q: 100, A2_MINP_Q: 25,
+  RATE_DELTA_D: 504, RATE_PCTL_WIN_D: 3780,
+  NETLIQ_DELTA_D: 63, NETLIQ_PCTL_WIN_D: 1260,
+  A1_PCTL_WIN_Q: 60, A1_MINP_Q: 20,
+};
+const FRED = {
+  A1_MARGIN: "BOGZ1FL663067003Q",
+  A2_ALLOC:  "BOGZ1FL153064486Q",
+  RATE_REAL: "DFII10",
+  WALCL: "WALCL", TGA: "WTREGEN", RRP: "RRPONTSYD",
 };
 
-// ================= ДВИЖОК (конвенции Блока A) =================
-// скользящая средняя, min_periods=часть окна
-function rollMean(vals, w, minp){
-  const out=new Array(vals.length).fill(NaN); const q=[]; let sum=0,cnt=0;
-  minp=minp||Math.max(20,Math.floor(w/4));
-  for(let i=0;i<vals.length;i++){
-    const x=vals[i]; q.push(x);
-    if(!Number.isNaN(x)){sum+=x;cnt++;}
-    if(q.length>w){const y=q.shift();if(!Number.isNaN(y)){sum-=y;cnt--;}}
-    out[i]=cnt>=minp?sum/cnt:NaN;
+// ================= ДВИЖОК (rolling-перцентиль; НЕ причёсывать под bottom.html:
+// там expanding-перцентиль, Блок A заморожен на rolling — расходятся до 41 пп) ====
+function rollMean(vals, w) {
+  const out = new Array(vals.length).fill(NaN);
+  let sum = 0, cnt = 0; const q = [];
+  for (let i = 0; i < vals.length; i++) {
+    const x = vals[i]; q.push(x);
+    if (!Number.isNaN(x)) { sum += x; cnt++; }
+    if (q.length > w) { const y = q.shift(); if (!Number.isNaN(y)) { sum -= y; cnt--; } }
+    out[i] = cnt > 0 ? sum / cnt : NaN;
   }
   return out;
 }
-// каузальный перцентиль в СКОЛЬЗЯЩЕМ окне (не expanding!) — конвенция формы F.
-// значение ранжируется строго против ПРЕДЫДУЩИХ точек внутри окна.
-function causalPctlRolling(vals, window, minp){
-  const n=vals.length, out=new Array(n).fill(NaN);
-  for(let i=0;i<n;i++){
-    if(Number.isNaN(vals[i])) continue;
-    const lo=Math.max(0,i-window+1);
-    let cntLess=0, cntTot=0;
-    for(let j=lo;j<i;j++){ const y=vals[j]; if(!Number.isNaN(y)){cntTot++; if(y<vals[i])cntLess++;} }
-    if(cntTot>=minp) out[i]=100*cntLess/cntTot;
+function causalPctlRolling(vals, window, minPeriods) {
+  const n = vals.length, out = new Array(n).fill(NaN);
+  for (let i = 0; i < n; i++) {
+    if (Number.isNaN(vals[i])) continue;
+    const lo = Math.max(0, i - window + 1);
+    let c = 0, tot = 0;
+    for (let j = lo; j < i; j++) {
+      const w = vals[j];
+      if (!Number.isNaN(w)) { tot++; if (w < vals[i]) c++; }
+    }
+    if (tot >= minPeriods) out[i] = 100 * c / tot;
   }
   return out;
 }
-// перцентиль по всей истории (для A4-компонентов на дневной оси)
-function causalPctlRoll(vals, window, minp){
-  return causalPctlRolling(vals, window, minp);
-}
-// разница за N шагов (накопленное ужесточение ставки)
-function diffN(vals, n){
-  const out=new Array(vals.length).fill(NaN);
-  for(let i=n;i<vals.length;i++){
-    if(!Number.isNaN(vals[i])&&!Number.isNaN(vals[i-n])) out[i]=vals[i]-vals[i-n];
+function diffK(vals, k, asPct) {
+  const out = new Array(vals.length).fill(NaN);
+  for (let i = k; i < vals.length; i++) {
+    const a = vals[i - k], b = vals[i];
+    if (!Number.isNaN(a) && !Number.isNaN(b)) {
+      out[i] = asPct ? (a !== 0 ? (b - a) / Math.abs(a) * 100 : NaN) : (b - a);
+    }
   }
   return out;
 }
-function lastValid(arr){ for(let i=arr.length-1;i>=0;i--) if(!Number.isNaN(arr[i])) return arr[i]; return NaN; }
+function lastFinite(arr) {
+  for (let i = arr.length - 1; i >= 0; i--) if (Number.isFinite(arr[i])) return arr[i];
+  return NaN;
+}
+function toQuarterEnd(s) {
+  const t = s.t.map(d => {
+    const q = Math.floor(d.getUTCMonth() / 3);
+    return new Date(Date.UTC(d.getUTCFullYear(), q * 3 + 3, 0));
+  });
+  return { t, v: s.v.slice() };
+}
+function resampleMonthlyLast(s) {
+  const map = new Map();
+  for (let i = 0; i < s.t.length; i++) {
+    if (Number.isNaN(s.v[i])) continue;
+    const d = s.t[i];
+    const key = d.getUTCFullYear() * 12 + d.getUTCMonth();
+    map.set(key, { t: new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)), v: s.v[i] });
+  }
+  const keys = [...map.keys()].sort((a, b) => a - b);
+  return { t: keys.map(k => map.get(k).t), v: keys.map(k => map.get(k).v) };
+}
 
-// ================= ЗАГРУЗКА (тот же ROUTES-слой, что на bottom) =================
+// ================= ЗАГРУЗКА (тот же слой, что в bottom.html) =================
 const ROUTES = [
   [u => "/.netlify/functions/proxy?url=" + encodeURIComponent(u), 26000, "свой прокси"],
   [u => u, 6000, "напрямую"],
   [u => "https://api.allorigins.win/raw?url=" + encodeURIComponent(u), 30000, "allorigins"],
   [u => "https://api.codetabs.com/v1/proxy?quest=" + encodeURIComponent(u), 20000, "codetabs"],
 ];
-async function fetchWithTimeout(url, ms){
-  const ctl=new AbortController(); const timer=setTimeout(()=>ctl.abort(),ms);
-  try{ const r=await fetch(url,{cache:"no-store",signal:ctl.signal});
-    if(!r.ok) throw new Error("HTTP "+r.status); return await r.text();
+async function fetchWithTimeout(url, ms) {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), ms);
+  try {
+    const r = await fetch(url, { cache: "no-store", signal: ctl.signal });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    return await r.text();
   } finally { clearTimeout(timer); }
 }
-function srcStatus(id,state,detail){
-  const el=document.getElementById("src-"+id); if(!el) return;
-  el.className="src "+state;
-  const d=document.getElementById("src-"+id+"-d"); if(d) d.textContent=detail||"";
+function srcStatus(id, state, detail) {
+  const el = document.getElementById("src-" + id);
+  if (!el) return;
+  el.className = "src-row " + state;
+  const d = document.getElementById("src-" + id + "-d");
+  if (d) d.textContent = detail || "";
 }
-const deadRoutes=new Set();
-const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-async function fetchText(url, log, label, srcId){
-  for(let i=0;i<ROUTES.length;i++){
-    const [wrap,ms,rname]=ROUTES[i];
-    if(deadRoutes.has(rname)) continue;
-    if(srcId) srcStatus(srcId,"loading",rname+"…");
-    try{
-      const t=await fetchWithTimeout(wrap(url),ms);
-      if(t.length<80) throw new Error("пустой ответ");
-      if(label) log("✓ "+label+" ("+rname+")");
+const deadRoutes = new Set();
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function fetchText(url, log, label, srcId) {
+  for (let i = 0; i < ROUTES.length; i++) {
+    const [wrap, ms, rname] = ROUTES[i];
+    if (deadRoutes.has(rname)) continue;
+    if (srcId) srcStatus(srcId, "loading", "загрузка · " + rname);
+    try {
+      const t = await fetchWithTimeout(wrap(url), ms);
+      if (t.length < 80) throw new Error("пустой ответ");
+      if (label) log("✓ " + label + " (" + rname + ")");
       return t;
-    }catch(e){
-      const why=e.name==="AbortError"?"таймаут":e.message;
-      if(rname==="свой прокси" && /404/.test(why)){ deadRoutes.add(rname); log("· свой прокси не задеплоен (404)"); }
-      else if(label) log("… "+label+": "+rname+" ("+why+")");
+    } catch (e) {
+      const why = e.name === "AbortError" ? "таймаут" : e.message;
+      if (rname === "свой прокси" && /404/.test(why)) {
+        deadRoutes.add(rname);
+        log("· свой прокси не задеплоен (404) — пропускаю до конца сессии");
+      } else if (label) log("… " + label + ": " + rname + " (" + why + ")");
       await sleep(250);
     }
   }
-  if(label) log("✗ "+label+": все маршруты исчерпаны");
+  if (label) log("✗ " + label + ": все маршруты исчерпаны");
   return null;
 }
-// FRED fredgraph.csv парсер (идентичен bottom.html)
-function parseFred(text){
-  const t=[],v=[]; const lines=text.split("\n");
-  for(let i=1;i<lines.length;i++){
-    const p=lines[i].split(",");
-    if(p.length<2) continue;
-    const d=new Date(p[0].trim()); const raw=p[1].trim(); const x=parseFloat(raw);
-    if(!isNaN(d)&&raw!=="."&&isFinite(x)){ t.push(d); v.push(x); }
+function parseFred(text) {
+  const t = [], v = [];
+  const lines = text.split("\n");
+  for (let i = 1; i < lines.length; i++) {
+    const p = lines[i].split(",");
+    if (p.length < 2) continue;
+    const d = new Date(p[0].trim());
+    const raw = p[1].trim();
+    const x = parseFloat(raw);
+    if (!isNaN(d) && raw !== "." && isFinite(x)) { t.push(d); v.push(x); }
   }
-  return {t,v};
+  return { t, v };
 }
-async function loadFred(id, log, label, srcId){
-  const t=await fetchText("https://fred.stlouisfed.org/graph/fredgraph.csv?id="+id, log, label, srcId);
-  if(!t) return null;
-  const s=parseFred(t);
-  return s.v.length? s : null;
+const okSeries = s => s && s.t && s.t.length > 20;
+
+// ================= РАСЧЁТ (замороженные конвенции) =================
+function computeA1(marginRaw) {
+  const s = toQuarterEnd(marginRaw);
+  const yoy = diffK(s.v, 4, true);
+  return lastFinite(causalPctlRolling(yoy, CFG.A1_PCTL_WIN_Q, CFG.A1_MINP_Q));
 }
-
-// ================= КЛАССИФИКАЦИЯ СЛОТА (способ В) =================
-function levelClass(v){
-  if(Number.isNaN(v)) return "lvl-dead";
-  if(v>85) return "lvl-red";
-  if(v>=60) return "lvl-yellow";
-  return "lvl-gray";
+function computeA2(allocRaw) {
+  const s = toQuarterEnd(allocRaw);
+  const ma = rollMean(s.v, CFG.A2_MA_Q);
+  const res = s.v.map((x, i) => Number.isNaN(ma[i]) ? NaN : x - ma[i]);
+  return lastFinite(causalPctlRolling(res, CFG.A2_PCTL_WIN_Q, CFG.A2_MINP_Q));
 }
-
-// ================= РАСЧЁТ =================
-async function run(){
-  const log=(m)=>{ document.getElementById("log").textContent+=m+"\n"; };
-  const st=document.getElementById("status");
-  st.className=""; st.innerHTML="Загрузка данных…<small>тяну FRED-ряды Блока A</small>";
-  deadRoutes.clear();
-
-  // ---- A1: маржинальный долг (квартальный уровень) → YoY → перцентиль окно 60 кв.
-  let a1pctl=NaN;
-  const a1=await loadFred(CFG.FRED_A1, log, "A1 маржа", "a1");
-  if(a1){
-    const yoy=[];
-    for(let i=0;i<a1.v.length;i++){ yoy.push(i>=4 ? (a1.v[i]/a1.v[i-4]-1)*100 : NaN); }
-    const p=causalPctlRolling(yoy, 60, 15);
-    a1pctl=lastValid(p);
-    srcStatus("a1","ok","готово");
-  } else srcStatus("a1","fail","нет данных");
-
-  // ---- A2: аллокация → остаток от 15л(60кв)-средней → перцентиль окно 100 кв. (форма F)
-  let a2pctl=NaN;
-  const a2=await loadFred(CFG.FRED_A2, log, "A2 аллокация", "a2");
-  if(a2){
-    const ma=rollMean(a2.v, CFG.MA_QUARTERS, 40);
-    const res=a2.v.map((x,i)=> Number.isNaN(ma[i])?NaN:x-ma[i]);
-    const p=causalPctlRolling(res, CFG.PCTL_WINDOW, CFG.PCTL_MINP);
-    a2pctl=lastValid(p);
-    srcStatus("a2","ok","готово");
-  } else srcStatus("a2","fail","нет данных");
-
-  // ---- A4: реальная ставка (накопл. ужесточение) + net liquidity, среднее перцентилей
-  let a4pctl=NaN, a4parts=[];
-  const rate=await loadFred(CFG.FRED_A4_RATE, log, "A4 ставка", "a4");
-  if(rate){
-    const dd=diffN(rate.v, CFG.A4_RATE_WIN);
-    const p=causalPctlRolling(dd, CFG.A4_PCTL_WIN, 250);
-    const lv=lastValid(p); if(!Number.isNaN(lv)) a4parts.push(lv);
+function computeA4(rateRaw, netliqRaw) {
+  let legR = NaN, legN = NaN;
+  if (okSeries(rateRaw)) {
+    const dm = resampleMonthlyLast(rateRaw);
+    const dR = diffK(dm.v, Math.round(CFG.RATE_DELTA_D / 21), false);
+    legR = lastFinite(causalPctlRolling(dR, Math.round(CFG.RATE_PCTL_WIN_D / 21), 40));
   }
-  const walcl=await loadFred(CFG.FRED_A4_WALCL, log, "A4 ликвидность", null);
-  if(walcl){
-    // net liquidity proxy: изменение баланса ФРС за 63 дня, перцентиль
-    const dd=diffN(walcl.v, 63);
-    const p=causalPctlRolling(dd, 260, 60);
-    const lv=lastValid(p);
-    // net liquidity: рост ликвидности = топливо есть = НИЗКИЙ вклад в исчерпание → инвертируем
-    if(!Number.isNaN(lv)) a4parts.push(100-lv);
+  if (okSeries(netliqRaw)) {
+    const nm = resampleMonthlyLast(netliqRaw);
+    const dN = diffK(nm.v, Math.round(CFG.NETLIQ_DELTA_D / 21), false);
+    legN = lastFinite(causalPctlRolling(dN, Math.round(CFG.NETLIQ_PCTL_WIN_D / 21), 20));
   }
-  if(a4parts.length){ a4pctl=a4parts.reduce((s,x)=>s+x,0)/a4parts.length; srcStatus("a4","ok","готово"); }
-  else srcStatus("a4","fail","нет данных");
-
-  // ---- Regime Score = среднее доступных слотов (агрегация из заморозки: mean)
-  const slots=[["A1","маржинальный долг · плечо",a1pctl],
-               ["A2","аллокация домохозяйств",a2pctl],
-               ["A4","финансовые условия",a4pctl]];
-  const avail=slots.map(s=>s[2]).filter(x=>!Number.isNaN(x));
-  const score = avail.length ? avail.reduce((s,x)=>s+x,0)/avail.length : NaN;
-
-  renderSlots(slots);
-  renderRegime(score);
-  renderStatus(score, avail.length);
-
-  document.getElementById("asof").textContent =
-    "обновлено " + new Date().toISOString().slice(0,10) + " · слотов " + avail.length + "/3";
+  const legs = [legR, legN].filter(Number.isFinite);
+  return legs.length ? legs.reduce((a, b) => a + b, 0) / legs.length : NaN;
 }
 
-function renderSlots(slots){
-  const host=document.getElementById("slots"); host.innerHTML="";
-  for(const [name,desc,val] of slots){
-    const cls=levelClass(val);
-    const w=Number.isNaN(val)?0:Math.max(0,Math.min(100,val));
-    const row=document.createElement("div");
-    row.className="slot-row "+cls;
-    row.innerHTML=
-      '<div><div class="sname"><span class="smark"></span>'+name+' · '+desc+'</div>'+
-      '<div class="sbar"><div class="sfill" style="width:'+w+'%"></div></div></div>'+
-      '<div class="sval">'+(Number.isNaN(val)?"н/д":Math.round(val))+'</div>';
+// ================= ОТРИСОВКА =================
+const lvlClass = v => v >= 85 ? "hot" : v >= 60 ? "mid" : "cool";
+
+function renderComponents(a1, a2, a4) {
+  const defs = [
+    ["A1", "Маржинальный долг", "Годовой темп маржинального кредитования брокерских счетов. Рост указывает на расширение спекулятивного плеча.", a1],
+    ["A2", "Аллокация домохозяйств", "Доля акций в финансовых активах домохозяйств относительно 15-летнего среднего уровня. Высокие значения — насыщенность спроса.", a2],
+    ["A4", "Финансовые условия", "Накопленное ужесточение: изменение реальной ставки (10Y TIPS) и чистой ликвидности ФРС за 24 месяца.", a4],
+  ];
+  const host = document.getElementById("components");
+  host.innerHTML = "";
+  for (const [code, name, desc, val] of defs) {
+    const row = document.createElement("div");
+    const has = Number.isFinite(val);
+    row.className = "comp-row " + (has ? lvlClass(val) : "cool");
+    row.innerHTML =
+      '<div class="cname"><span class="sq"></span><span>' + name +
+      '<small>' + code + ' · БЛОК A</small></span></div>' +
+      '<div class="cdesc">' + (has ? desc : "Источник данных недоступен. Значение будет рассчитано после восстановления загрузки.") + '</div>' +
+      '<div class="cbar"><span class="t60"></span><span class="t85"></span>' +
+      '<div class="f" style="width:' + (has ? Math.max(0, Math.min(100, val)) : 0) + '%"></div></div>' +
+      '<div class="cval' + (has ? '' : ' dead') + '">' + (has ? Math.round(val) : 'н/д') +
+      (has ? '<small>ПЕРЦЕНТИЛЬ</small>' : '') + '</div>';
     host.appendChild(row);
   }
 }
-function renderRegime(score){
-  const thr=CFG.THETA_A;
-  document.getElementById("regimethr").style.left=thr+"%";
-  document.getElementById("lbl-thr").style.left=thr+"%";
-  document.getElementById("lbl-thr").textContent="θ "+thr.toFixed(1);
-  if(Number.isNaN(score)){
-    document.getElementById("lbl-score").textContent="н/д";
-    return;
+
+function renderScale(score) {
+  const has = Number.isFinite(score);
+  const w = has ? Math.max(0, Math.min(100, score)) : 0;
+  const fill = document.getElementById("scale-fill");
+  fill.style.width = w + "%";
+  fill.style.background = has && score >= CFG.THETA_A ? "var(--warn-dot)" : "#C8C8C8";
+  document.getElementById("scale-thr").style.left = CFG.THETA_A + "%";
+  const sc = document.getElementById("scale");
+  let cur = sc.querySelector(".cur");
+  if (cur) cur.remove();
+  if (has) {
+    cur = document.createElement("div");
+    cur.className = "cur";
+    cur.style.left = w + "%";
+    cur.innerHTML = '<span class="tl">' + score.toFixed(1) + '</span>';
+    sc.appendChild(cur);
   }
-  const w=Math.max(0,Math.min(100,score));
-  document.getElementById("regimefill").style.width=w+"%";
-  document.getElementById("regimefill").style.background = score>=thr ? "var(--warn-dot)" : "#B4B4B4";
-  const ls=document.getElementById("lbl-score");
-  ls.style.left=w+"%"; ls.textContent=score.toFixed(1);
-  ls.style.color = score>=thr ? "var(--warn)" : "var(--ink2)";
-}
-function renderStatus(score, navail){
-  const st=document.getElementById("status");
-  if(Number.isNaN(score)){
-    st.className="neutral";
-    st.innerHTML="Нет данных<small>ни один слот Блока A не загрузился — см. источники выше</small>";
-    return;
+  const ticks = document.getElementById("scale-ticks");
+  let h = "";
+  for (let v = 0; v <= 100; v += 25) {
+    h += '<i style="left:' + v + '%"></i><b style="left:' + v + '%">' + v + '</b>';
   }
-  const yellow = score>=CFG.THETA_A;
-  st.className = yellow ? "yellow" : "neutral";
-  const head = yellow ? "ЖЁЛТОЕ · режим взведён" : "НЕЙТРАЛЬНО · режим спокоен";
-  st.innerHTML = head +
-    "<small>Regime Score "+score.toFixed(1)+" · θ_A "+CFG.THETA_A.toFixed(1)+
-    " · агрегация: среднее · слотов "+navail+"/3</small>";
+  ticks.innerHTML = h;
 }
 
-async function runSafe(){
-  try{ await run(); }
-  catch(e){
-    document.getElementById("status").className="neutral";
-    document.getElementById("status").textContent="Ошибка: "+e.message;
-    document.getElementById("log").textContent += "✗ EXCEPTION: "+(e.stack||e.message)+"\n";
+function renderStatus(score) {
+  const st = document.getElementById("status");
+  if (!Number.isFinite(score)) {
+    st.className = "neutral";
+    st.innerHTML = '<div class="state">Данные неполны</div>' +
+      '<div class="expl">Композитный индекс не рассчитан: доступны не все компоненты. Проверьте раздел «Источники данных» и повторите загрузку.</div>';
+    return;
+  }
+  const metrics =
+    '<div class="metrics">' +
+    '<div class="metric"><div class="mv">' + score.toFixed(1) + '</div><div class="ml">КОМПОЗИТНЫЙ ИНДЕКС</div></div>' +
+    '<div class="metric"><div class="mv">' + CFG.THETA_A.toFixed(1) + '</div><div class="ml">ПОРОГ СОСТОЯНИЯ</div></div>' +
+    '</div>';
+  if (score >= CFG.THETA_A) {
+    st.className = "yellow";
+    st.innerHTML = '<div class="state">Жёлтое состояние</div>' +
+      '<div class="expl">Композитный индекс выше порога. Структурные компоненты находятся в зоне исторических максимумов — режим, в прошлом предшествовавший формированию рыночных вершин. Состояние не является торговым сигналом.</div>' + metrics;
+  } else {
+    st.className = "neutral";
+    st.innerHTML = '<div class="state">Нейтральное состояние</div>' +
+      '<div class="expl">Композитный индекс ниже порога: структурные условия формирования вершины не выражены.</div>' + metrics;
+  }
+}
+
+// ================= ГЛАВНЫЙ ПРОГОН =================
+async function run() {
+  const logEl = document.getElementById("log");
+  logEl.textContent = "";
+  const log = m => { logEl.textContent += m + "\n"; };
+  const st = document.getElementById("status");
+  st.className = "neutral";
+  st.innerHTML = '<div class="state">Загрузка данных</div>' +
+    '<div class="expl">Выполняется запрос к внешним источникам. Статус каждого источника отображается в разделе «Источники данных».</div>';
+  for (const s of ["a1", "a2", "a4"]) srcStatus(s, "loading", "в очереди");
+
+  async function loadFred(id, label, srcId) {
+    const t = await fetchText("https://fred.stlouisfed.org/graph/fredgraph.csv?id=" + id, log, label, srcId);
+    return t ? parseFred(t) : null;
+  }
+
+  const a1raw = await loadFred(FRED.A1_MARGIN, "A1 маржа (FRED)", "a1");
+  const a2raw = await loadFred(FRED.A2_ALLOC, "A2 аллокация (FRED)", "a2");
+  srcStatus("a4", "loading", "загрузка · 4 ряда");
+  const rateRaw = await loadFred(FRED.RATE_REAL, "A4 ставка (FRED)", null);
+  const walcl = await loadFred(FRED.WALCL, "A4 WALCL (FRED)", null);
+  const tga = await loadFred(FRED.TGA, "A4 TGA (FRED)", null);
+  const rrp = await loadFred(FRED.RRP, "A4 RRP (FRED)", null);
+
+  let netliqRaw = null;
+  if (okSeries(walcl)) {
+    const keyOf = d => d.getUTCFullYear() * 366 + d.getUTCMonth() * 31 + d.getUTCDate();
+    const tgaMap = new Map(); if (okSeries(tga)) tga.t.forEach((d, i) => tgaMap.set(keyOf(d), tga.v[i]));
+    const rrpMap = new Map(); if (okSeries(rrp)) rrp.t.forEach((d, i) => rrpMap.set(keyOf(d), rrp.v[i]));
+    const t = [], v = [];
+    let lastTga = 0, lastRrp = 0;
+    for (let i = 0; i < walcl.t.length; i++) {
+      const k = keyOf(walcl.t[i]);
+      if (tgaMap.has(k)) lastTga = tgaMap.get(k);
+      if (rrpMap.has(k)) lastRrp = rrpMap.get(k);
+      t.push(walcl.t[i]); v.push(walcl.v[i] - lastTga - lastRrp);
+    }
+    netliqRaw = { t, v };
+  }
+
+  const iso = s => { const q = toQuarterEnd(s); return q.t[q.t.length - 1].toISOString().slice(0, 10); };
+  srcStatus("a1", okSeries(a1raw) ? "ok" : "fail",
+    okSeries(a1raw) ? "данные по " + iso(a1raw) : "недоступен");
+  srcStatus("a2", okSeries(a2raw) ? "ok" : "fail",
+    okSeries(a2raw) ? "данные по " + iso(a2raw) : "недоступен");
+  const a4ok = okSeries(rateRaw) || okSeries(netliqRaw);
+  srcStatus("a4", a4ok ? "ok" : "fail",
+    a4ok ? (okSeries(rateRaw) && okSeries(netliqRaw) ? "2 из 2 ног" : "1 из 2 ног") : "недоступен");
+
+  log("→ расчёт Блока A (rolling-перцентиль, форма F)…");
+  await new Promise(r => setTimeout(r, 30));
+
+  const a1 = okSeries(a1raw) ? computeA1(a1raw) : NaN;
+  const a2 = okSeries(a2raw) ? computeA2(a2raw) : NaN;
+  const a4 = computeA4(rateRaw, netliqRaw);
+  const legs = [a1, a2, a4].filter(Number.isFinite);
+  const score = legs.length === 3 ? legs.reduce((s, x) => s + x, 0) / 3 : NaN;
+
+  renderComponents(a1, a2, a4);
+  renderScale(score);
+  renderStatus(score);
+
+  let asof = "—";
+  if (okSeries(a2raw)) asof = iso(a2raw);
+  document.getElementById("asof").textContent = "данные по " + asof;
+
+  document.querySelector(".foot").style.display = "block";
+  log("готово · score=" + (Number.isFinite(score) ? score.toFixed(1) : "n/a"));
+}
+async function runSafe() {
+  try { await run(); }
+  catch (e) {
+    const st = document.getElementById("status");
+    st.className = "neutral";
+    st.innerHTML = '<div class="state">Ошибка расчёта</div>' +
+      '<div class="expl">' + e.message + '. Повторите загрузку кнопкой «Обновить данные».</div>';
+    document.getElementById("log").textContent += "✗ EXCEPTION: " + (e.stack || e.message) + "\n";
   }
 }
 document.getElementById("refresh").addEventListener("click", runSafe);

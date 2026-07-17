@@ -27,6 +27,7 @@ body{background:#fff;color:var(--ink);font-family:var(--sans);-webkit-font-smoot
 
 .back{display:inline-block;font-family:var(--monof);font-size:11px;color:var(--muted);text-decoration:none;margin-bottom:14px}
 .back:hover{color:var(--ink)}
+.back:focus-visible{outline:2px solid var(--yellow);outline-offset:2px}
 
 header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;border:none;padding:0}
 .hleft{display:flex;align-items:center;gap:10px}
@@ -108,7 +109,7 @@ button:focus-visible{outline:2px solid var(--yellow);outline-offset:2px}
 .an-antirule{margin-top:12px;font-size:11px;color:var(--muted);line-height:1.5;font-style:normal;font-family:var(--monof)}
 
 /* подвал */
-.foot{margin-top:26px}
+.foot{margin-top:26px;display:none}
 .footline{display:flex;justify-content:space-between;align-items:center;margin-top:16px}
 .fbrand{display:flex;align-items:center;gap:9px}
 .fmark{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:1.5px;width:18px;height:18px}
@@ -882,13 +883,21 @@ async function run() {
 async function runSafe() {
   try { await run(); }
   catch (e) {
-    document.getElementById("status").textContent = "Ошибка: " + e.message;
+    document.getElementById("status").textContent = "Не удалось загрузить данные. Нажмите «Обновить» или повторите позже.";
     document.getElementById("log").textContent += "✗ EXCEPTION: " + (e.stack || e.message) + "\n";
   }
 }
 document.getElementById("refresh").addEventListener("click", runSafe);
 runSafe();
 </script>
-<script>document.getElementById('yr').textContent=new Date().getFullYear();</script>
+<script>
+document.getElementById('yr').textContent=new Date().getFullYear();
+(function(){
+  var comp=document.getElementById('components'),ft=document.querySelector('.foot');
+  function upd(){ if(comp.children.length>0) ft.style.display=''; }
+  new MutationObserver(upd).observe(comp,{childList:true});
+  upd();
+})();
+</script>
 </body>
 </html>

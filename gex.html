@@ -4,76 +4,121 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GEX — дилерская гамма</title>
-<link href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&family=PT+Mono&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#F4F6F8;--panel:#FFFFFF;--ink:#17242E;--ink2:#5A6B78;--line:#D3DBE2;
---grn:#0E9F5B;--grn2:#12B368;--red:#D63B2F;--cyn:#0794A8;--amber:#C7802E}
+/* ===== Metro-стиль · Barbell ===== */
+:root{
+  --sans:'Space Grotesk',system-ui,sans-serif;
+  --monof:'JetBrains Mono',monospace;
+  --ink:#1a1a1a; --ink2:#5C5C5C; --muted:#8E8E8E;
+  --line:#E4E4E4; --rule:#EDEDED; --card:#F8F8F8; --panel:#fff; --bg:#fff;
+  --blue:#00A4EF; --violet:#7550BE; --yellow:#FFB900; --green:#7FBA00; --green-ink:#4C8A00;
+  --red:#D24726; --red-bg:#FBF1EF;
+  /* легаси-имена: на них опирается JS-разметка уровней и SVG */
+  --grn:#4C8A00; --cyn:#0084C0;
+}
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--ink);font-family:'PT Sans',sans-serif;padding:20px;max-width:1140px;margin:0 auto}
-.mono{font-family:'PT Mono',monospace}
-header{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid var(--ink);padding-bottom:10px;margin-bottom:16px;flex-wrap:wrap;gap:10px}
-h1{font-size:20px;font-weight:700}
-h1 small{font-weight:400;color:var(--ink2);font-size:12px;margin-left:8px}
+body{background:#fff;color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;padding:34px 20px;max-width:1000px;margin:0 auto}
+.mono{font-family:var(--monof)}
+.vh{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+
+.back{display:inline-block;font-family:var(--monof);font-size:11px;color:var(--muted);text-decoration:none;margin-bottom:14px}
+.back:hover{color:var(--ink)}
+.back:focus-visible{outline:2px solid var(--yellow);outline-offset:2px}
+
+header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:12px;flex-wrap:wrap;gap:12px}
+.hleft{display:flex;align-items:center;gap:12px}
+.hbadge{width:30px;height:30px;background:var(--violet);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex:none}
+h1{font-size:22px;font-weight:300;letter-spacing:.01em}
+.hsub{font-family:var(--monof);font-size:10.5px;color:var(--muted);margin-top:2px;letter-spacing:.02em}
 .controls{display:flex;gap:8px;align-items:center}
-.controls input,.controls button{height:38px;box-sizing:border-box;font-family:inherit;font-size:14px;border-radius:6px}
-.controls input{border:1px solid var(--line);padding:0 12px;background:var(--panel);color:var(--ink);width:150px;text-transform:uppercase}
-.controls input:focus{outline:none;border-color:var(--ink);box-shadow:0 0 0 3px rgba(23,36,46,.08)}
-.controls button{background:var(--ink);color:#fff;font-weight:700;border:none;padding:0 18px;cursor:pointer}
-.controls button:hover{background:#2A3B49}
 .symwrap{position:relative}
-.symerr{position:absolute;top:calc(100% + 8px);left:0;background:var(--red);color:#fff;font-size:12.5px;line-height:1.4;padding:7px 11px;border-radius:6px;white-space:nowrap;display:none;z-index:5;box-shadow:0 4px 10px rgba(0,0,0,.15)}
-.symerr::before{content:'';position:absolute;top:-4px;left:16px;width:8px;height:8px;background:var(--red);transform:rotate(45deg)}
+.controls input{height:38px;font-family:var(--monof);font-size:14px;border:1px solid var(--line);border-radius:0;padding:0 12px;background:#fff;color:var(--ink);width:160px;text-transform:uppercase}
+.controls input:focus{outline:2px solid var(--yellow);outline-offset:1px;border-color:var(--ink)}
+button{height:38px;font-family:var(--sans);font-size:13px;font-weight:700;padding:0 18px;border:1px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer;border-radius:0;transition:background .15s,color .15s}
+button:hover{background:var(--ink);color:#fff}
+button:focus-visible{outline:2px solid var(--yellow);outline-offset:2px}
+button:disabled{opacity:.5;cursor:default}
+.symerr{position:absolute;top:calc(100% + 8px);left:0;background:var(--red);color:#fff;font-size:12px;line-height:1.4;padding:7px 11px;white-space:nowrap;display:none;z-index:5}
 .symerr.show{display:block}
-#regime{padding:14px 18px;border-radius:8px;margin-bottom:16px;border:1px solid var(--line);background:var(--panel);font-size:15px}
-#regime.green{border-left:6px solid var(--grn);background:#EAF7F0}
-#regime.red{border-left:6px solid var(--red);background:#FBEBEA}
-#regime b{font-size:18px}
-#regime .row{display:flex;gap:26px;flex-wrap:wrap;margin-top:8px;font-size:13px;color:var(--ink2)}
-#regime .row span b{font-size:14px;color:var(--ink)}
+
+.rule4{height:2px;background:linear-gradient(to right,var(--blue) 0 25%,var(--green) 25% 50%,var(--yellow) 50% 75%,var(--violet) 75% 100%);margin-bottom:20px}
+
+/* режим: тонкий кант слева, фон только у красного */
+#regime{border-left:3px solid #C8C8C8;padding:10px 16px;margin-bottom:20px;font-size:15px;background:none}
+#regime b{font-size:18px;font-weight:700}
+#regime .row{display:flex;gap:24px;flex-wrap:wrap;margin-top:8px;font-size:12.5px;color:var(--ink2);font-family:var(--monof)}
+#regime .row span b{font-size:13px;color:var(--ink);font-weight:500}
+#regime.green{border-left-color:var(--green)}
+#regime.red{border-left-color:var(--red);background:var(--red-bg)}
 .frag-thin{color:var(--red);font-weight:700}
-.grid{display:grid;grid-template-columns:1fr 340px;gap:16px;margin-bottom:16px}
+
+/* панели: без рамок, заголовок с маркером и подчёркиванием */
+.grid{display:grid;grid-template-columns:1fr 340px;gap:24px;margin-bottom:24px}
 @media(max-width:820px){.grid{grid-template-columns:1fr}}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px}
-.panel h2{font-size:11px;text-transform:uppercase;letter-spacing:1.2px;color:var(--ink2);margin-bottom:10px;font-weight:700}
-#levels{width:100%;height:auto}
-.chartcap{font-size:11.5px;line-height:1.4;color:var(--ink2);margin:-4px 0 10px}
-.lvltable{width:100%;font-size:13px;border-collapse:collapse}
-.lvltable td{padding:5px 8px;border-bottom:1px solid var(--line)}
-.lvltable .k{font-family:'PT Mono',monospace;font-weight:700;text-align:right}
+.panel{background:none;border:none;border-radius:0;padding:0}
+.panel h2{font-size:13px;font-weight:700;display:flex;align-items:center;position:relative;padding-bottom:10px;margin-bottom:12px}
+.panel h2::before{content:'';width:10px;height:10px;margin-right:8px;flex:none;background:var(--blue)}
+.panel h2::after{content:'';position:absolute;left:0;bottom:0;width:64px;height:2px;background:var(--blue)}
+.panel h2.violet::before,.panel h2.violet::after{background:var(--violet)}
+.panel h2 .h2-sub{font-weight:400;color:var(--muted);margin-left:6px;letter-spacing:0}
+#levels{width:100%;height:auto;display:block}
+.chartcap{font-size:11.5px;line-height:1.45;color:var(--ink2);margin:0 0 10px}
+.lvlnote{font-size:12px;line-height:1.5;color:var(--ink2);margin:0 0 12px}
+
+/* таблица уровней-магнитов */
+.lvltable{width:100%;border-collapse:collapse;font-family:var(--monof);font-size:.78rem;font-variant-numeric:tabular-nums}
+.lvltable td{padding:6px 8px;border-top:1px solid var(--rule)}
+.lvltable .k{font-weight:500;text-align:right}
 .lvltable .c{color:var(--grn)} .lvltable .p{color:var(--red)}
 .lvltable .bar{width:100%}
-.lvltable .bar i{display:inline-block;height:9px;border-radius:2px;vertical-align:middle}
-table.exp{width:100%;border-collapse:collapse;font-size:12px;font-family:'PT Mono',monospace}
-table.exp th,table.exp td{padding:4px 7px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
-table.exp th{color:var(--ink2);font-weight:400;font-family:'PT Sans',sans-serif;position:sticky;top:0;background:var(--panel)}
-table.exp td.d{text-align:left}
-.pos{color:var(--grn)} .neg{color:var(--red)}
-.wrap{max-height:420px;overflow:auto}
-#log{display:none;font-size:12px;color:var(--ink2);white-space:pre-line;margin-top:14px;font-family:'PT Mono',monospace;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px}
-.lvltable tr.grp td{padding-top:13px;font-family:'PT Sans',sans-serif;font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--ink2);font-weight:700;border-bottom:2px solid var(--line)}
-.lvlnote{font-size:12.5px;line-height:1.5;color:var(--ink2);margin:-4px 0 12px}
-#analysis{margin-top:20px;padding:22px 26px}
-#analysis.green{border-left:6px solid var(--grn)}
-#analysis.red{border-left:6px solid var(--red)}
-#analysis h2{font-size:18px;text-transform:none;letter-spacing:0;color:var(--ink);margin-bottom:16px}
-#analysis .ana-part{margin-bottom:20px}
+.lvltable .bar i{display:inline-block;height:8px;vertical-align:middle;border-radius:0}
+.lvltable tr.grp td{padding-top:14px;border-top:none;font-family:var(--sans);font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}
+
+/* аналитика: заголовок-секция, цвет по режиму */
+#analysis{margin-top:24px}
+#analysis h2{font-size:16px;font-weight:700;display:flex;align-items:center;position:relative;padding-bottom:10px;margin-bottom:16px}
+#analysis h2::before{content:'';width:10px;height:10px;margin-right:8px;flex:none;background:var(--green)}
+#analysis h2::after{content:'';position:absolute;left:0;bottom:0;width:64px;height:2px;background:var(--green)}
+#analysis.red h2::before,#analysis.red h2::after{background:var(--red)}
+#analysis .ana-part{margin-bottom:18px}
 #analysis .ana-part:last-child{margin-bottom:0}
-#analysis .ana-lbl{font-family:'PT Mono',monospace;font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--ink2);margin-bottom:6px}
-#analysis .ana-txt{font-size:17.5px;line-height:1.65;color:var(--ink)}
+#analysis .ana-lbl{font-family:var(--monof);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px}
+#analysis .ana-txt{font-size:15px;line-height:1.65;color:var(--ink)}
 #analysis .ana-txt b{font-weight:700}
-.foot{font-size:11px;color:var(--ink2);margin-top:12px;line-height:1.5}
+
+#log{display:none}
+.method-note{font-family:var(--monof);font-size:11px;color:var(--muted);margin-top:24px;line-height:1.6}
+
+/* подвал */
+.foot{margin-top:26px}
+.footline{display:flex;justify-content:space-between;align-items:center;margin-top:16px}
+.fbrand{display:flex;align-items:center;gap:9px}
+.fmark{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:1.5px;width:18px;height:18px}
+.fmark span{display:block}
+.fmark .m1{background:#F25022}.fmark .m2{background:#7FBA00}
+.fmark .m3{background:#00A4EF}.fmark .m4{background:#FFB900}
+.fname{font-size:13px;font-weight:700;color:var(--ink)}
+.fyear{font-family:var(--monof);font-size:10.5px;color:#B4B4B4}
 </style>
 </head>
 <body>
-<nav style="margin-bottom:12px">
-  <a href="index.html" style="text-decoration:none;font-size:13px;color:var(--ink2)">← все инструменты</a>
-</nav>
+<a class="back" href="index.html">← все инструменты</a>
 <header>
-  <h1>GEX — дилерская гамма<small>сборка gex-2 · CBOE delayed 15m · допущение: дилеры лонг-колл/шорт-пут</small></h1>
+  <div class="hleft">
+    <div class="hbadge">G</div>
+    <div>
+      <h1>GEX — дилерская гамма</h1>
+      <div class="hsub">CBOE delayed 15m · допущение: дилеры лонг-колл / шорт-пут</div>
+    </div>
+  </div>
   <div class="controls">
     <div class="symwrap">
+      <label class="vh" for="sym">Тикер</label>
       <input id="sym" list="symlist" value="QQQ" maxlength="6" autocomplete="off" placeholder="Тикер, напр. AAPL">
-      <div class="symerr" id="symerr"></div>
+      <div class="symerr" id="symerr" role="alert"></div>
     </div>
     <datalist id="symlist">
       <option value="QQQ">QQQ (под TQQQ)</option>
@@ -91,16 +136,18 @@ table.exp td.d{text-align:left}
   </div>
 </header>
 
+<div class="rule4"></div>
+
 <div id="regime">Загрузка…<div class="row"></div></div>
 
 <div class="grid">
   <div class="panel">
-    <h2>AUTO-GEX уровни (ближние 45 дн)</h2>
+    <h2>Уровни AUTO-GEX <span class="h2-sub">— ближние 45 дней</span></h2>
     <div class="chartcap" id="chartcap"></div>
-    <svg id="levels" viewBox="0 0 760 560" preserveAspectRatio="xMidYMid meet" role="img"></svg>
+    <svg id="levels" viewBox="0 0 760 560" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Карта дилерских уровней-магнитов"></svg>
   </div>
   <div class="panel">
-    <h2>Уровни-магниты</h2>
+    <h2 class="violet">Уровни-магниты</h2>
     <div class="lvlnote">C — сопротивления сверху (call resistance), P — поддержки снизу (put support). Номер — ранг по силе гаммы: 1 — самый сильный магнит.</div>
     <table class="lvltable" id="lvltable"></table>
   </div>
@@ -109,7 +156,18 @@ table.exp td.d{text-align:left}
 <div class="panel" id="analysis" style="display:none"></div>
 
 <div id="log"></div>
-<p class="foot">HVL/flip — граница режимов: выше — зелёная гамма (рынок липнет к магнитам C-уровней, дилеры гасят волатильность), ниже — красная (движения усиливаются). «Без 0DTE» — завтрашняя подушка после экспирации сегодняшних опционов. OI обновляется раз в сутки; внутридневную смену матрицы срез не видит. Инструмент аналитический — в торговую систему (лестницу, выходы) не встраивается.</p>
+<p class="method-note">HVL/flip — граница режимов: выше — зелёная гамма (рынок липнет к магнитам C-уровней, дилеры гасят волатильность), ниже — красная (движения усиливаются). «Без 0DTE» — завтрашняя подушка после экспирации сегодняшних опционов. OI обновляется раз в сутки; внутридневную смену матрицы срез не видит. Инструмент аналитический — в торговую систему (лестницу, выходы) не встраивается.</p>
+
+<div class="foot" id="foot" style="display:none">
+  <div class="rule4" style="margin-bottom:0"></div>
+  <div class="footline">
+    <span class="fbrand">
+      <span class="fmark" aria-hidden="true"><span class="m1"></span><span class="m2"></span><span class="m3"></span><span class="m4"></span></span>
+      <span class="fname">Barbell · TQQQ + QDTE</span>
+    </span>
+    <span class="fyear">© <span id="yr"></span></span>
+  </div>
+</div>
 
 <script>
 // ================= ДВИЖОК (паритет с Colab подтверждён) =================
@@ -344,7 +402,7 @@ async function run() {
   if (!raw || !raw.data) {
     reg.className = "red";
     reg.innerHTML = "Не удалось загрузить цепочку " + sym +
-      ".<div class='row'>Смотрите лог ниже; попробуйте ещё раз.</div>";
+      ".<div class='row'>Проверьте тикер и нажмите «Рассчитать» ещё раз.</div>";
     return;
   }
   log("✓ загружено за " + ((performance.now() - t0) / 1000).toFixed(1) + " с, считаю гамму…");
@@ -352,7 +410,7 @@ async function run() {
 
   let R;
   try { R = compute(raw.data, {}); }
-  catch (e) { reg.className = "red"; reg.innerHTML = "Ошибка расчёта: " + e.message; return; }
+  catch (e) { log("✗ расчёт: " + e.message); reg.className = "red"; reg.innerHTML = "Не удалось посчитать по цепочке " + sym + ".<div class='row'>Попробуйте другой тикер или повторите позже.</div>"; return; }
   render(sym, R, log);
   log("готово: " + R.nOptions + " опционов в расчёте");
 }
@@ -552,13 +610,13 @@ async function drawLevels(sym, R, maxg) {
     if (l.bar > 0)
       s += "<rect x='"+(xR+6)+"' y='"+(l.yLab-6).toFixed(1)+"' width='"+(l.bar*120).toFixed(1)+"' height='12' fill='"+l.color+"' opacity='0.85' rx='2'/>";
     const tx = xR + 6 + (l.bar>0 ? l.bar*120 + 6 : 4);
-    s += "<text x='"+tx.toFixed(1)+"' y='"+(l.yLab+4).toFixed(1)+"' font-size='13' font-weight='bold' fill='"+l.color+"' font-family='PT Mono'>"+l.text+"</text>";
+    s += "<text x='"+tx.toFixed(1)+"' y='"+(l.yLab+4).toFixed(1)+"' font-size='13' font-weight='bold' fill='"+l.color+"' font-family='JetBrains Mono'>"+l.text+"</text>";
   });
 
   // spot — слева
   const ys=y(R.spot);
   s += "<line x1='"+padL+"' x2='"+xR+"' y1='"+ys.toFixed(1)+"' y2='"+ys.toFixed(1)+"' stroke='#17242E' stroke-width='1' stroke-dasharray='4 3' opacity='0.6'/>";
-  s += "<text x='"+padL+"' y='"+(ys-5).toFixed(1)+"' font-size='13' fill='#17242E' font-family='PT Mono'>spot $"+R.spot.toFixed(1)+"</text>";
+  s += "<text x='"+padL+"' y='"+(ys-5).toFixed(1)+"' font-size='13' fill='#17242E' font-family='JetBrains Mono'>spot $"+R.spot.toFixed(1)+"</text>";
   svg.innerHTML = s;
 }
 
@@ -566,6 +624,15 @@ document.getElementById("run").addEventListener("click", run);
 document.getElementById("sym").addEventListener("keydown", e => { if (e.key === "Enter") run(); });
 document.getElementById("sym").addEventListener("input", () => document.getElementById("symerr").classList.remove("show"));
 run();
+</script>
+<script>
+document.getElementById('yr').textContent=new Date().getFullYear();
+(function(){
+  var reg=document.getElementById('regime'),ft=document.getElementById('foot');
+  function upd(){ if(/\b(green|red)\b/.test(reg.className)) ft.style.display=''; }
+  new MutationObserver(upd).observe(reg,{attributes:true,attributeFilter:['class']});
+  upd();
+})();
 </script>
 </body>
 </html>

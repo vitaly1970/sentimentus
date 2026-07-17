@@ -31,6 +31,7 @@ body{background:#fff;font-family:var(--sans);color:var(--ink);-webkit-font-smoot
 a{color:inherit}
 .back{display:inline-block;font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;margin-bottom:14px}
 .back:hover{color:var(--ink)}
+.back:focus-visible,.home:focus-visible{outline:2px solid var(--yellow);outline-offset:2px}
 
 .topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
 .tleft{display:flex;align-items:center;gap:10px}
@@ -725,7 +726,7 @@ async function runAdvisor(){
         'или начало разворота вниз (выход валиден). Транши при любом решении продолжают действовать.';
     }else if(Math.abs(dd)<=0.1){$('warnbar').style.display='';$('warnbar').textContent='QQQ на новом максимуме: пересчитать уровни, переставить алерты.';}
     $('out').style.display='';
-  }catch(e){log('ОШИБКА: '+e.message);$('warnbar').style.display='';$('warnbar').textContent='Ошибка: '+e.message;$('meta').textContent='ошибка загрузки';}
+  }catch(e){log('ОШИБКА: '+e.message);$('warnbar').style.display='';$('warnbar').textContent='Не удалось загрузить данные. Обновите страницу (F5) или повторите позже.';$('meta').textContent='ошибка загрузки';}
 }
 
 /* автозапуск при открытии; обновление — перезагрузкой (F5) */
